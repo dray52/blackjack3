@@ -103,7 +103,7 @@ tm.preload("assets/backcard.png").await;
     rand_card.enabled=false;
     stand.enabled=false;
     reset.enabled=false;
-
+//test
 
     let mut pcard5 = StillImage::new(show, 75.0, 150.0, 345.0, 200.0,true,1.0).await;
     let mut pcard4 = StillImage::new(show, 75.0, 150.0, 290.0, 200.0,true,1.0).await;
