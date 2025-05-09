@@ -82,6 +82,9 @@ async fn main() {
         "assets/10heart.png",
         "assets/10diamond.png",        
         "assets/10spade.png",];
+    let mut tm = TextureManager::new();
+tm.preload_all(&deck).await;
+tm.preload("assets/backcard.png").await;
     let mut show = "assets/backcard.png";
     let mut lblplayer = Label::new("0", 450.0, 275.0, 30);
     let mut lbldealer = Label::new("0", 450.0, 100.0, 30);
@@ -128,8 +131,8 @@ async fn main() {
         if rand_card.click() {
             show = deck.choose().unwrap();
             if turn == 3 {
-            
-            pcard3.set_texture(show).await;
+            pcard3.set_preload(tm.get_preload(show).unwrap());
+    
             deck.retain(|&x| x != show);
             println!("{}", show);
             pvalue = playervalue(pvalue, show);
@@ -137,7 +140,7 @@ async fn main() {
             turn = 4;
             }
             else if turn == 4 {
-            pcard4.set_texture(show).await;
+            pcard4.set_preload(tm.get_preload(show).unwrap());
             deck.retain(|&x| x != show);
             println!("{}", show);
             pvalue = playervalue(pvalue, show);
@@ -145,7 +148,7 @@ async fn main() {
             turn = 5;
             }
             else if turn == 5 {
-            pcard5.set_texture(show).await;
+            pcard5.set_preload(tm.get_preload(show).unwrap());
             deck.retain(|&x| x != show);
             println!("{}", show);
             pvalue = playervalue(pvalue, show);
@@ -164,16 +167,16 @@ async fn main() {
             stand.enabled = true;
             rand_card.enabled = true;
             show = deck.choose().unwrap();
-            pcard1.set_texture(show).await;
+           pcard1.set_preload(tm.get_preload(show).unwrap());
             deck.retain(|&x| x != show);
            pvalue = playervalue(pvalue, show);
             show = deck.choose().unwrap();
-            pcard2.set_texture(show).await;
+            pcard2.set_preload(tm.get_preload(show).unwrap());
             deck.retain(|&x| x != show);
             pvalue = playervalue(pvalue, show);
             
             show = deck.choose().unwrap();
-            dcard1.set_texture(show).await;
+            dcard1.set_preload(tm.get_preload(show).unwrap());
             deck.retain(|&x| x != show);
             dvalue = dealervalue(dvalue, show);
             start.enabled = false;  
@@ -190,19 +193,19 @@ async fn main() {
                 deck.retain(|&x| x != show);
                 if dturn == 2{
                     
-                dcard2.set_texture(show).await;
+                dcard2.set_preload(tm.get_preload(show).unwrap());
                     dturn = 3;
                 }
                 else if dturn == 3 {
-                    dcard3.set_texture(show).await;
+                    dcard3.set_preload(tm.get_preload(show).unwrap());
                     dturn = 4;
                 }
                 else if dturn == 4 {
-                    dcard4.set_texture(show).await;
+                    dcard4.set_preload(tm.get_preload(show).unwrap());
                     dturn = 5;
                 }
                 else if dturn == 5 {
-                    dcard5.set_texture(show).await;
+                    dcard5.set_preload(tm.get_preload(show).unwrap());
                     
                 }
             dvalue = dealervalue(dvalue, show);
@@ -222,16 +225,16 @@ async fn main() {
 
         }
         if reset.click(){
-            pcard1.set_texture("assets/backcard.png").await;
-            pcard2.set_texture("assets/backcard.png").await;
-            pcard3.set_texture("assets/backcard.png").await;
-            pcard4.set_texture("assets/backcard.png").await;
-            pcard5.set_texture("assets/backcard.png").await;
-            dcard1.set_texture("assets/backcard.png").await;
-            dcard2.set_texture("assets/backcard.png").await;
-            dcard3.set_texture("assets/backcard.png").await;
-            dcard4.set_texture("assets/backcard.png").await;
-            dcard5.set_texture("assets/backcard.png").await;
+            pcard1.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            pcard2.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            pcard3.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            pcard4.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            pcard5.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            dcard1.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            dcard2.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            dcard3.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            dcard4.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            dcard5.set_preload(tm.get_preload("assets/backcard.png").unwrap());
             pvalue = 0;
             dvalue = 0;
             turn = 3;
