@@ -11,6 +11,7 @@ use crate::modules::label::Label;
 use crate::modules::preload_image::TextureManager;
 use crate::modules::still_image::StillImage;
 use crate::modules::text_button::TextButton;
+use crate::modules::text_input::TextInput;
 
 /// Set up window settings before the app runs
 fn window_conf() -> Conf {
@@ -85,6 +86,8 @@ async fn main() {
     let mut tm = TextureManager::new();
 tm.preload_all(&deck).await;
 tm.preload("assets/backcard.png").await;
+
+
     let mut show = "assets/backcard.png";
     let mut lblplayer = Label::new("0", 450.0, 275.0, 30);
     let mut lbldealer = Label::new("0", 450.0, 100.0, 30);
@@ -92,6 +95,10 @@ tm.preload("assets/backcard.png").await;
     let mut rand_card = TextButton::new(400.0, 400.0, 100.0, 50.0, "Hit".to_string(), BLUE, GREEN,30);
     let mut stand = TextButton::new(300.0, 400.0, 100.0, 50.0, "Stand".to_string(), BLUE, GREEN,30);
     let mut reset = TextButton::new(200.0, 400.0, 100.0, 50.0, "reset".to_string(), BLUE, GREEN,30);
+    let mut txtbet = TextInput::new(100.0, 500.0, 300.0, 40.0, 40.0);
+
+
+txtbet.with_colors(WHITE, RED, BLACK, WHITE);
     rand_card.with_round(15.0);
     rand_card.with_border(RED, 5.0);
     start.with_round(15.0);
@@ -103,6 +110,7 @@ tm.preload("assets/backcard.png").await;
     rand_card.enabled=false;
     stand.enabled=false;
     reset.enabled=false;
+    txtbet.set_text("bet");
 
 
     let mut pcard5 = StillImage::new(show, 75.0, 150.0, 345.0, 200.0,true,1.0).await;
@@ -263,6 +271,7 @@ tm.preload("assets/backcard.png").await;
         dcard1.draw();
         lblplayer.draw();
         lbldealer.draw();
+        txtbet.draw();
        
         
         next_frame().await;
