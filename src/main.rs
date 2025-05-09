@@ -95,7 +95,7 @@ tm.preload("assets/backcard.png").await;
     let mut rand_card = TextButton::new(400.0, 400.0, 100.0, 50.0, "Hit".to_string(), BLUE, GREEN,30);
     let mut stand = TextButton::new(300.0, 400.0, 100.0, 50.0, "Stand".to_string(), BLUE, GREEN,30);
     let mut reset = TextButton::new(200.0, 400.0, 100.0, 50.0, "reset".to_string(), BLUE, GREEN,30);
-    let mut txtbet = TextInput::new(100.0, 500.0, 300.0, 40.0, 40.0);
+    let mut txtbet = TextInput::new(100.0, 500.0, 300.0, 50.0, 40.0);
 
 
 txtbet.with_colors(WHITE, RED, BLACK, WHITE);
