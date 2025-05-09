@@ -103,23 +103,24 @@ tm.preload("assets/backcard.png").await;
     rand_card.enabled=false;
     stand.enabled=false;
     reset.enabled=false;
-//test
 
-    let mut pcard5 = StillImage::new(show, 75.0, 150.0, 345.0, 200.0,true,1.0).await;
-    let mut pcard4 = StillImage::new(show, 75.0, 150.0, 290.0, 200.0,true,1.0).await;
-    let mut pcard3 = StillImage::new(show, 75.0, 150.0, 235.0, 200.0,true,1.0).await;
-    let mut pcard2 = StillImage::new(show, 75.0, 150.0, 180.0, 200.0,true,1.0).await;
-    let mut pcard1 = StillImage::new(show, 75.0, 150.0, 125.0, 200.0,true,1.0).await;
-    let mut dcard1 = StillImage::new(show, 75.0, 150.0, 125.0, 25.0,true,1.0).await;
-    let mut dcard2 = StillImage::new(show, 75.0, 150.0, 180.0, 25.0,true,1.0).await;
-    let mut dcard3 = StillImage::new(show, 75.0, 150.0, 235.0, 25.0,true,1.0).await;
-    let mut dcard4 = StillImage::new(show, 75.0, 150.0, 290.0, 25.0,true,1.0).await;
-    let mut dcard5 = StillImage::new(show, 75.0, 150.0, 345.0, 25.0,true,1.0).await;
+
+    let mut pcard5 = StillImage::new("", 75.0, 150.0, 345.0, 200.0,true,1.0).await;
+    let mut pcard4 = StillImage::new("", 75.0, 150.0, 290.0, 200.0,true,1.0).await;
+    let mut pcard3 = StillImage::new("", 75.0, 150.0, 235.0, 200.0,true,1.0).await;
+    let mut pcard2 = StillImage::new("", 75.0, 150.0, 180.0, 200.0,true,1.0).await;
+    let mut pcard1 = StillImage::new("", 75.0, 150.0, 125.0, 200.0,true,1.0).await;
+    let mut dcard1 = StillImage::new("", 75.0, 150.0, 125.0, 25.0,true,1.0).await;
+    let mut dcard2 = StillImage::new("", 75.0, 150.0, 180.0, 25.0,true,1.0).await;
+    let mut dcard3 = StillImage::new("", 75.0, 150.0, 235.0, 25.0,true,1.0).await;
+    let mut dcard4 = StillImage::new("", 75.0, 150.0, 290.0, 25.0,true,1.0).await;
+    let mut dcard5 = StillImage::new("", 75.0, 150.0, 345.0, 25.0,true,1.0).await;
     let mut pvalue = 0;
     let mut dvalue = 0;
     let mut turn = 3;
     let mut dturn = 2;
     rand::srand(miniquad::date::now() as u64);
+    
     loop {
         
 
