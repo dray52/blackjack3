@@ -10,6 +10,7 @@ use macroquad::prelude::*;
 use macroquad::rand::ChooseRandom;
 use crate::modules::label::Label;
 use crate::modules::preload_image::TextureManager;
+use crate::modules::preload_image::LoadingScreenOptions;
 use crate::modules::still_image::StillImage;
 use crate::modules::text_button::TextButton;
 use crate::modules::text_input::TextInput;
@@ -94,8 +95,17 @@ async fn main() {
     // Convert string slices to Strings
     let asset_strings: Vec<String> = all_assets.iter().map(|s| s.to_string()).collect();
     
-    // Use the built-in loading screen
-    tm.preload_with_loading_screen(asset_strings).await;
+    // Create custom loading screen options
+    let loading_options = LoadingScreenOptions {
+        title: Some("BLACKJACK".to_string()),
+        background_color: DARKGREEN,
+        bar_fill_color: Color::new(0.2, 0.8, 0.2, 1.0), // Brighter green
+        // Use default values for other options
+        ..Default::default()
+    };
+    
+    // Use the built-in loading screen with custom options
+    tm.preload_with_loading_screen(asset_strings, Some(loading_options)).await;
     
     // Continue with the rest of the game setup
     let mut show = "assets/backcard.png";

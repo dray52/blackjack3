@@ -94,6 +94,53 @@ use macroquad::prelude::*;
 use macroquad::experimental::coroutines::start_coroutine;
 use crate::modules::still_image::set_texture_main;
 
+/// Options for customizing the loading screen appearance
+pub struct LoadingScreenOptions {
+    /// Title displayed at the top of the loading screen (default: none)
+    pub title: Option<String>,
+    /// Background color of the loading screen (default: DARKGREEN)
+    pub background_color: Color,
+    /// Progress bar background color (default: DARKGRAY)
+    pub bar_background_color: Color,
+    /// Progress bar fill color (default: GREEN)
+    pub bar_fill_color: Color,
+    /// Text color for all text elements (default: WHITE)
+    pub text_color: Color,
+    /// File name text color (default: SKYBLUE)
+    pub filename_color: Color,
+    /// Font size for the title (default: 60)
+    pub title_font_size: u16,
+    /// Font size for progress text (default: 30)
+    pub progress_font_size: u16,
+    /// Font size for filename text (default: 20)
+    pub filename_font_size: u16,
+    /// Whether to show the "Loading Complete!" message (default: true)
+    pub show_completion_message: bool,
+    /// Custom completion message (default: "Loading Complete!")
+    pub completion_message: String,
+    /// Delay in seconds after completion before continuing (default: 0.5)
+    pub completion_delay: f32,
+}
+
+impl Default for LoadingScreenOptions {
+    fn default() -> Self {
+        Self {
+            title: None,
+            background_color: DARKGREEN,
+            bar_background_color: DARKGRAY,
+            bar_fill_color: GREEN,
+            text_color: WHITE,
+            filename_color: SKYBLUE,
+            title_font_size: 60,
+            progress_font_size: 30,
+            filename_font_size: 20,
+            show_completion_message: true,
+            completion_message: "Loading Complete!".to_string(),
+            completion_delay: 0.5,
+        }
+    }
+}
+
 /// A central texture manager to preload and share textures
 /// This reduces memory usage and prevents flickering when switching images
 #[derive(Clone)]
@@ -182,7 +229,10 @@ impl TextureManager {
     
     /// Load assets with a built-in loading screen that works well for web
     /// This method handles all the complexities of asset loading and progress display
-    pub async fn preload_with_loading_screen(&self, assets: Vec<String>) {
+    pub async fn preload_with_loading_screen(&self, assets: Vec<String>, options: Option<LoadingScreenOptions>) {
+        // Use default options if none provided
+        let options = options.unwrap_or_default();
+        
         // Thread-safe progress counters that can be shared between coroutines
         let loaded_counter = Arc::new(AtomicUsize::new(0));
         let total_assets = assets.len();
@@ -216,29 +266,30 @@ impl TextureManager {
             let loaded_assets = loaded_counter.load(Ordering::SeqCst);
             let progress = loaded_assets as f32 / total_assets as f32;
             
-            // Clear the screen with game background
-            clear_background(DARKGREEN);
+            // Clear the screen with custom background color
+            clear_background(options.background_color);
             
-            // Draw title
-            let title = "BLACKJACK";
-            let title_size = 60;
-            let title_dim = measure_text(title, None, title_size, 1.0);
-            draw_text(
-                title,
-                screen_width() / 2.0 - title_dim.width / 2.0,
-                screen_height() / 3.0,
-                title_size as f32,
-                WHITE
-            );
+            // Draw title if one is provided
+            if let Some(title) = &options.title {
+                let title_size = options.title_font_size;
+                let title_dim = measure_text(title, None, title_size, 1.0);
+                draw_text(
+                    title,
+                    screen_width() / 2.0 - title_dim.width / 2.0,
+                    screen_height() / 3.0,
+                    title_size as f32,
+                    options.text_color
+                );
+            }
             
             // Draw progress text
             let progress_text = format!("Loading: {:.0}%", progress * 100.0);
             draw_text(
                 &progress_text,
-                screen_width() / 2.0 - measure_text(&progress_text, None, 30, 1.0).width / 2.0,
+                screen_width() / 2.0 - measure_text(&progress_text, None, options.progress_font_size, 1.0).width / 2.0,
                 screen_height() / 2.0,
-                30.0,
-                WHITE
+                options.progress_font_size as f32,
+                options.text_color
             );
             
             // Draw loading bar
@@ -248,15 +299,15 @@ impl TextureManager {
             let bar_y = screen_height() / 2.0 + 40.0;
             
             // Background bar
-            draw_rectangle(bar_x, bar_y, bar_width, bar_height, DARKGRAY);
+            draw_rectangle(bar_x, bar_y, bar_width, bar_height, options.bar_background_color);
             
             // Progress bar
             if progress > 0.0 {
-                draw_rectangle(bar_x, bar_y, bar_width * progress, bar_height, GREEN);
+                draw_rectangle(bar_x, bar_y, bar_width * progress, bar_height, options.bar_fill_color);
             }
             
             // Border
-            draw_rectangle_lines(bar_x, bar_y, bar_width, bar_height, 2.0, WHITE);
+            draw_rectangle_lines(bar_x, bar_y, bar_width, bar_height, 2.0, options.text_color);
             
             // Display current file if available
             if loaded_assets > 0 && loaded_assets < total_assets {
@@ -264,25 +315,34 @@ impl TextureManager {
                 let file_text = format!("Loading: {}", file_name);
                 draw_text(
                     &file_text,
-                    screen_width() / 2.0 - measure_text(&file_text, None, 20, 1.0).width / 2.0,
+                    screen_width() / 2.0 - measure_text(&file_text, None, options.filename_font_size, 1.0).width / 2.0,
                     bar_y + bar_height + 30.0,
-                    20.0,
-                    SKYBLUE
+                    options.filename_font_size as f32,
+                    options.filename_color
                 );
             }
             
             // Check if loading is complete
             if loaded_assets >= total_assets {
-                // Draw completion message
-                clear_background(DARKGREEN);
-                let completion_text = "Loading Complete!";
-                let text_size = 50;
-                let text_dimensions = measure_text(completion_text, None, text_size, 1.0);
-                let text_x = screen_width() / 2.0 - text_dimensions.width / 2.0;
-                let text_y = screen_height() / 2.0;
-                
-                draw_text(completion_text, text_x, text_y, text_size as f32, WHITE);
-                next_frame().await;
+                // Show completion message if enabled
+                if options.show_completion_message {
+                    clear_background(options.background_color);
+                    let text_size = options.progress_font_size + 20; // Slightly larger than progress font
+                    let text_dimensions = measure_text(&options.completion_message, None, text_size, 1.0);
+                    let text_x = screen_width() / 2.0 - text_dimensions.width / 2.0;
+                    let text_y = screen_height() / 2.0;
+                    
+                    draw_text(&options.completion_message, text_x, text_y, text_size as f32, options.text_color);
+                    next_frame().await;
+                    
+                    // Apply completion delay if specified
+                    if options.completion_delay > 0.0 {
+                        let start_time = get_time();
+                        while get_time() - start_time < options.completion_delay as f64 {
+                            next_frame().await;
+                        }
+                    }
+                }
                 
                 // Break the loading loop and proceed with the game
                 break;
