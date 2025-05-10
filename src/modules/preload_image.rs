@@ -20,7 +20,7 @@ To use this:
     // Or preload individual textures
     texture_manager.preload("assets/image3.png").await;
     
-5. Get preloaded textures for use with ImageObject - two approaches:
+5. Get preloaded textures for use with StillImage - two approaches:
 
    // Approach 1: Using unwrap() - Simple but will panic if image doesn't exist
    // Only use this when you're certain the texture was preloaded
