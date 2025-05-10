@@ -88,36 +88,58 @@ Note: For clearing images, use the clear() method directly on the ImageObject:
 */
 use macroquad::texture::Texture2D;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use macroquad::prelude::*;
+use macroquad::experimental::coroutines::start_coroutine;
 use crate::modules::still_image::set_texture_main;
 
 /// A central texture manager to preload and share textures
 /// This reduces memory usage and prevents flickering when switching images
+#[derive(Clone)]
 pub struct TextureManager {
-    textures: HashMap<String, (Texture2D, Option<Vec<u8>>)>,
-    load_order: Vec<String>, // Store just the order textures were loaded in
+    textures: Arc<Mutex<HashMap<String, (Texture2D, Option<Vec<u8>>)>>>,
+    load_order: Arc<Mutex<Vec<String>>>, // Store just the order textures were loaded in
 }
 
 impl TextureManager {
     /// Create a new texture manager
     pub fn new() -> Self {
         Self {
-            textures: HashMap::new(),
-            load_order: Vec::new(),
+            textures: Arc::new(Mutex::new(HashMap::new())),
+            load_order: Arc::new(Mutex::new(Vec::new())),
         }
     }
     
     /// Preload a texture by its file path
-    pub async fn preload(&mut self, path: &str) {
-        if !self.textures.contains_key(path) {
+    pub async fn preload(&self, path: &str) {
+        // First, check if the texture already exists
+        let texture_exists = {
+            let textures = self.textures.lock().unwrap();
+            textures.contains_key(path)
+        };
+        
+        // If it doesn't exist, load it
+        if !texture_exists {
+            // Load the texture outside of any locks
             let (texture, mask) = set_texture_main(path).await;
-            self.textures.insert(path.to_string(), (texture, mask));
-            self.load_order.push(path.to_string()); // Store just the load order
+            
+            // Now update the maps with short-lived locks
+            {
+                let mut textures = self.textures.lock().unwrap();
+                textures.insert(path.to_string(), (texture, mask));
+            }
+            
+            {
+                let mut load_order = self.load_order.lock().unwrap();
+                load_order.push(path.to_string());
+            }
         }
     }
     
     /// Preload multiple textures at once
     #[allow(unused)]
-    pub async fn preload_all(&mut self, paths: &[&str]) {
+    pub async fn preload_all(&self, paths: &[&str]) {
         for path in paths {
             self.preload(path).await;
         }
@@ -126,7 +148,8 @@ impl TextureManager {
     /// Get a preloaded texture for use in an ImageObject
     #[allow(unused)]
     pub fn get_preload(&self, path: &str) -> Option<(Texture2D, Option<Vec<u8>>, String)> {
-        self.textures.get(path).map(|(texture, mask)| 
+        let textures = self.textures.lock().unwrap();
+        textures.get(path).map(|(texture, mask)| 
             (texture.clone(), mask.clone(), path.to_string())
         )
     }
@@ -134,8 +157,9 @@ impl TextureManager {
     /// Get a preloaded texture by its index in the preload order
     #[allow(unused)]
     pub fn get_preload_by_index(&self, index: usize) -> Option<(Texture2D, Option<Vec<u8>>, String)> {
-        if index < self.load_order.len() {
-            let path = &self.load_order[index];
+        let load_order = self.load_order.lock().unwrap();
+        if index < load_order.len() {
+            let path = &load_order[index];
             self.get_preload(path)
         } else {
             None
@@ -145,12 +169,127 @@ impl TextureManager {
     /// Get the number of preloaded textures
     #[allow(unused)]
     pub fn texture_count(&self) -> usize {
-        self.load_order.len()
+        let load_order = self.load_order.lock().unwrap();
+        load_order.len()
     }
     
     /// Get a list of all preloaded texture paths in load order
     #[allow(unused)]
-    pub fn get_texture_paths(&self) -> &[String] {
-        &self.load_order
+    pub fn get_texture_paths(&self) -> Vec<String> {
+        let load_order = self.load_order.lock().unwrap();
+        load_order.clone()
+    }
+    
+    /// Load assets with a built-in loading screen that works well for web
+    /// This method handles all the complexities of asset loading and progress display
+    pub async fn preload_with_loading_screen(&self, assets: Vec<String>) {
+        // Thread-safe progress counters that can be shared between coroutines
+        let loaded_counter = Arc::new(AtomicUsize::new(0));
+        let total_assets = assets.len();
+        
+        // Start a background coroutine for loading assets WITHOUT awaiting it
+        // This is the key to avoiding black flashes on web
+        {
+            let assets_to_load = assets.clone();
+            let counter = loaded_counter.clone();
+            let loading_tm = self.clone(); // Clone the TextureManager for the coroutine
+            
+            // Important: We start the coroutine but DON'T await it
+            start_coroutine(async move {
+                for asset_path in assets_to_load {
+                    // Load asset into the shared texture manager
+                    loading_tm.preload(&asset_path).await;
+                    
+                    // Update the counter atomically
+                    counter.fetch_add(1, Ordering::SeqCst);
+                    
+                    // Yielding control back to the main thread
+                    next_frame().await;
+                }
+            });
+        }
+        
+        // Main rendering loop for the loading screen
+        // This runs in the main thread and never awaits the asset loading
+        loop {
+            // Read the current progress atomically
+            let loaded_assets = loaded_counter.load(Ordering::SeqCst);
+            let progress = loaded_assets as f32 / total_assets as f32;
+            
+            // Clear the screen with game background
+            clear_background(DARKGREEN);
+            
+            // Draw title
+            let title = "BLACKJACK";
+            let title_size = 60;
+            let title_dim = measure_text(title, None, title_size, 1.0);
+            draw_text(
+                title,
+                screen_width() / 2.0 - title_dim.width / 2.0,
+                screen_height() / 3.0,
+                title_size as f32,
+                WHITE
+            );
+            
+            // Draw progress text
+            let progress_text = format!("Loading: {:.0}%", progress * 100.0);
+            draw_text(
+                &progress_text,
+                screen_width() / 2.0 - measure_text(&progress_text, None, 30, 1.0).width / 2.0,
+                screen_height() / 2.0,
+                30.0,
+                WHITE
+            );
+            
+            // Draw loading bar
+            let bar_width = screen_width() * 0.6;
+            let bar_height = 30.0;
+            let bar_x = screen_width() / 2.0 - bar_width / 2.0;
+            let bar_y = screen_height() / 2.0 + 40.0;
+            
+            // Background bar
+            draw_rectangle(bar_x, bar_y, bar_width, bar_height, DARKGRAY);
+            
+            // Progress bar
+            if progress > 0.0 {
+                draw_rectangle(bar_x, bar_y, bar_width * progress, bar_height, GREEN);
+            }
+            
+            // Border
+            draw_rectangle_lines(bar_x, bar_y, bar_width, bar_height, 2.0, WHITE);
+            
+            // Display current file if available
+            if loaded_assets > 0 && loaded_assets < total_assets {
+                let file_name = assets[loaded_assets].split('/').last().unwrap_or("");
+                let file_text = format!("Loading: {}", file_name);
+                draw_text(
+                    &file_text,
+                    screen_width() / 2.0 - measure_text(&file_text, None, 20, 1.0).width / 2.0,
+                    bar_y + bar_height + 30.0,
+                    20.0,
+                    SKYBLUE
+                );
+            }
+            
+            // Check if loading is complete
+            if loaded_assets >= total_assets {
+                // Draw completion message
+                clear_background(DARKGREEN);
+                let completion_text = "Loading Complete!";
+                let text_size = 50;
+                let text_dimensions = measure_text(completion_text, None, text_size, 1.0);
+                let text_x = screen_width() / 2.0 - text_dimensions.width / 2.0;
+                let text_y = screen_height() / 2.0;
+                
+                draw_text(completion_text, text_x, text_y, text_size as f32, WHITE);
+                next_frame().await;
+                
+                // Break the loading loop and proceed with the game
+                break;
+            }
+            
+            // Update the screen WITHOUT awaiting asset loading
+            next_frame().await;
+        }
     }
 }
