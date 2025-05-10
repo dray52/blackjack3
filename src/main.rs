@@ -8,6 +8,8 @@ mod modules;
 
 use macroquad::prelude::*;
 use macroquad::rand::ChooseRandom;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 use crate::modules::label::Label;
 use crate::modules::preload_image::TextureManager;
 use crate::modules::still_image::StillImage;
@@ -91,24 +93,24 @@ async fn main() {
     // Create the texture manager
     let mut tm = TextureManager::new();
     
-    // Setup loading screen
+    // Loading variables
     let total_assets = all_assets.len();
-    let mut current_asset = 0;
+    let mut loaded_assets = 0;
     
-    // Web-friendly asset loading with minimal drawing to prevent flashing
-    while current_asset < total_assets {
-        // Calculate progress
-        let loading_progress = current_asset as f32 / total_assets as f32;
+    // Simple loading screen - one asset at a time with minimal flashing
+    for asset_path in all_assets.iter() {
+        // Calculate loading progress
+        let progress = loaded_assets as f32 / total_assets as f32;
         
-        // Always use the same background color
+        // Render a simple loading screen
         clear_background(DARKGREEN);
         
         // Draw title
-        let title_text = "BLACKJACK";
+        let title = "BLACKJACK";
         let title_size = 60;
-        let title_dim = measure_text(title_text, None, title_size, 1.0);
+        let title_dim = measure_text(title, None, title_size, 1.0);
         draw_text(
-            title_text,
+            title,
             screen_width() / 2.0 - title_dim.width / 2.0,
             screen_height() / 3.0,
             title_size as f32,
@@ -116,68 +118,70 @@ async fn main() {
         );
         
         // Draw progress text
-        let loading_text = format!("Loading: {:.0}%", loading_progress * 100.0);
-        let text_size = 30;
-        let text_dim = measure_text(&loading_text, None, text_size, 1.0);
-        let text_x = screen_width() / 2.0 - text_dim.width / 2.0;
-        let text_y = screen_height() / 2.0;
-        draw_text(&loading_text, text_x, text_y, text_size as f32, WHITE);
+        let progress_text = format!("Loading: {:.0}%", progress * 100.0);
+        draw_text(
+            &progress_text,
+            screen_width() / 2.0 - measure_text(&progress_text, None, 30, 1.0).width / 2.0,
+            screen_height() / 2.0,
+            30.0,
+            WHITE
+        );
         
         // Draw loading bar
         let bar_width = screen_width() * 0.6;
         let bar_height = 30.0;
         let bar_x = screen_width() / 2.0 - bar_width / 2.0;
-        let bar_y = text_y + 40.0;
+        let bar_y = screen_height() / 2.0 + 40.0;
         
-        // Draw bar background
-        draw_rectangle(bar_x, bar_y, bar_width, bar_height, Color::new(0.0, 0.2, 0.0, 1.0));
+        // Background bar
+        draw_rectangle(bar_x, bar_y, bar_width, bar_height, DARKGRAY);
         
-        // Draw progress
-        if loading_progress > 0.0 {
-            draw_rectangle(bar_x, bar_y, bar_width * loading_progress, bar_height, GREEN);
+        // Progress bar
+        if progress > 0.0 {
+            draw_rectangle(bar_x, bar_y, bar_width * progress, bar_height, GREEN);
         }
         
-        // Draw border
+        // Border
         draw_rectangle_lines(bar_x, bar_y, bar_width, bar_height, 2.0, WHITE);
         
-        // Draw file name
-        let file_name = all_assets[current_asset].split('/').last().unwrap_or("");
-        let file_text = format!("Loading: {}", file_name);
-        let file_size = 20;
-        let file_dim = measure_text(&file_text, None, file_size, 1.0);
-        draw_text(
-            &file_text,
-            screen_width() / 2.0 - file_dim.width / 2.0,
-            bar_y + bar_height + 40.0,
-            file_size as f32,
-            SKYBLUE
-        );
+        // Display current file
+        if loaded_assets > 0 && loaded_assets <= total_assets {
+            let file_name = asset_path.split('/').last().unwrap_or(asset_path);
+            let file_text = format!("Loading: {}", file_name);
+            draw_text(
+                &file_text,
+                screen_width() / 2.0 - measure_text(&file_text, None, 20, 1.0).width / 2.0,
+                bar_y + bar_height + 30.0,
+                20.0,
+                SKYBLUE
+            );
+        }
         
-        // Update screen
+        // Update the screen
         next_frame().await;
         
-        // Load the asset
-        tm.preload(all_assets[current_asset]).await;
-        current_asset += 1;
+        // Load the current texture - won't cause a flash since it's after next_frame
+        tm.preload(asset_path).await;
+        
+        // Update progress
+        loaded_assets += 1;
     }
     
-    // All assets are loaded, draw a "complete" message
+    // Show completion message
     clear_background(DARKGREEN);
     let completion_text = "Loading Complete!";
     let text_size = 50;
-    let text_dimensions = measure_text(completion_text, None, text_size, 1.0);
-    let text_x = screen_width() / 2.0 - text_dimensions.width / 2.0;
-    let text_y = screen_height() / 2.0;
-    
-    draw_text(completion_text, text_x, text_y, text_size as f32, WHITE);
+    let text_dim = measure_text(completion_text, None, text_size, 1.0);
+    draw_text(
+        completion_text,
+        screen_width() / 2.0 - text_dim.width / 2.0,
+        screen_height() / 2.0,
+        text_size as f32,
+        WHITE
+    );
     next_frame().await;
-    
-    // Short delay so users can see the completion message
-    let start_time = get_time();
-    while get_time() - start_time < 1.0 {
-        next_frame().await;
-    }
 
+    // Continue with the rest of the game setup
     let mut show = "assets/backcard.png";
     let mut lblplayer = Label::new("0", 450.0, 275.0, 30);
     let mut lbldealer = Label::new("0", 450.0, 100.0, 30);
