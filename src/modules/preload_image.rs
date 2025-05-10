@@ -60,6 +60,29 @@ To use this:
         }
     }
 
+9. For using with loading screens and coroutines:
+    // Create a coroutine for loading textures
+    let loading_task = start_coroutine(async move {
+        let mut tm = TextureManager::new();
+        for (index, asset_path) in assets.iter().enumerate() {
+            tm.preload(asset_path).await;
+            loading_progress = (index + 1) as f32 / total_assets as f32;
+            next_frame().await;
+        }
+        loading_complete = true;
+        tm
+    });
+    
+    // In loading screen loop
+    while !loading_complete {
+        clear_background(DARKGREEN);
+        draw_loading_progress(loading_progress);
+        next_frame().await;
+    }
+    
+    // Get the fully loaded texture manager
+    let tm = loading_task.await;
+
 Note: For clearing images, use the clear() method directly on the ImageObject:
     img.clear();
 */

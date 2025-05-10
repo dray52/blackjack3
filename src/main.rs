@@ -6,7 +6,8 @@ Program Details: <Program Description Here>
 
 mod modules;
 
-use macroquad::{prelude::*, rand::ChooseRandom};
+use macroquad::prelude::*;
+use macroquad::rand::ChooseRandom;
 use crate::modules::label::Label;
 use crate::modules::preload_image::TextureManager;
 use crate::modules::still_image::StillImage;
@@ -29,7 +30,7 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
- 
+    // Create card deck data
     let mut deck = vec![
         "assets/aceHeart.png",
         "assets/aceDiamond.png",
@@ -83,10 +84,177 @@ async fn main() {
         "assets/10heart.png",
         "assets/10diamond.png",        
         "assets/10spade.png",];
+    
+    // Add backcard to the full list of assets
+    let all_assets = [&deck[..], &["assets/backcard.png"]].concat();
+    
+    // Create the texture manager
     let mut tm = TextureManager::new();
-tm.preload_all(&deck).await;
-tm.preload("assets/backcard.png").await;
-
+    
+    // Setup loading screen
+    let total_assets = all_assets.len();
+    let mut current_asset = 0;
+    
+    // Web-friendly asset loading with timeout handling
+    while current_asset < total_assets {
+        // Calculate progress
+        let loading_progress = current_asset as f32 / total_assets as f32;
+        
+        // Clear screen and draw loading interface
+        clear_background(DARKGREEN);
+        
+        // Draw loading text
+        let loading_text = format!("Loading Assets: {:.0}%", loading_progress * 100.0);
+        let text_size = 40;
+        let text_dimensions = measure_text(&loading_text, None, text_size, 1.0);
+        
+        // Center the text
+        let text_x = screen_width() / 2.0 - text_dimensions.width / 2.0;
+        let text_y = screen_height() / 2.0 - text_dimensions.height / 2.0;
+        
+        draw_text(&loading_text, text_x, text_y, text_size as f32, WHITE);
+        
+        // Draw loading bar
+        let bar_width = screen_width() * 0.6;
+        let bar_height = 30.0;
+        let bar_x = screen_width() / 2.0 - bar_width / 2.0;
+        let bar_y = text_y + text_dimensions.height + 20.0;
+        
+        // Background
+        draw_rectangle(bar_x, bar_y, bar_width, bar_height, GRAY);
+        
+        // Filled portion
+        draw_rectangle(
+            bar_x, 
+            bar_y, 
+            bar_width * loading_progress, 
+            bar_height, 
+            GREEN
+        );
+        
+        // Border
+        draw_rectangle_lines(
+            bar_x, 
+            bar_y, 
+            bar_width, 
+            bar_height, 
+            2.0, 
+            WHITE
+        );
+        
+        // Draw a card animation at the loading position
+        let animation_time = get_time() as f32;
+        let card_x = bar_x + (bar_width * loading_progress) - 20.0;
+        let card_y = bar_y - 10.0;
+        let bounce_offset = (animation_time * 5.0).sin() * 5.0;
+        
+        // Draw card front
+        draw_rectangle(
+            card_x,
+            card_y + bounce_offset, 
+            40.0, 
+            50.0, 
+            WHITE
+        );
+        
+        // Draw card back pattern
+        let pattern_size = 5.0;
+        for i in 0..5 {
+            for j in 0..7 {
+                if (i + j) % 2 == 0 {
+                    draw_rectangle(
+                        card_x + i as f32 * pattern_size + 5.0,
+                        card_y + bounce_offset + j as f32 * pattern_size + 5.0,
+                        pattern_size,
+                        pattern_size,
+                        RED
+                    );
+                }
+            }
+        }
+        
+        // Show current file being loaded - truncate if too long for web display
+        let file_name = all_assets[current_asset].split('/').last().unwrap_or(all_assets[current_asset]);
+        let file_text = format!("Loading: {}", file_name);
+        let file_size = 20;
+        draw_text(
+            &file_text,
+            bar_x,
+            bar_y + bar_height + 30.0,
+            file_size as f32,
+            SKYBLUE
+        );
+        
+        // Update the screen
+        next_frame().await;
+        
+        // For web compatibility, wrap the loading in a timeout mechanism
+        let load_start_time = get_time();
+        
+        // Try loading the asset with a timeout for web safety
+        #[cfg(target_arch = "wasm32")]
+        {
+            // Web-specific code with timeout 
+            let mut tries = 0;
+            let max_tries = 3;
+            
+            while tries < max_tries {
+                // Show retry message if needed
+                if tries > 0 {
+                    clear_background(DARKGREEN);
+                    draw_text(
+                        &format!("Retrying {}/{}...", tries, max_tries),
+                        bar_x, 
+                        bar_y + bar_height + 60.0,
+                        20.0,
+                        ORANGE
+                    );
+                    next_frame().await;
+                }
+                
+                // Try to load the asset
+                tm.preload(all_assets[current_asset]).await;
+                
+                // Check if we got it (by checking if it's in the texture map)
+                if tm.get_preload(all_assets[current_asset]).is_some() {
+                    break;
+                }
+                
+                tries += 1;
+                
+                // If we've been trying too long, just continue to avoid getting stuck
+                if get_time() - load_start_time > 5.0 {  // 5 second total timeout
+                    break;
+                }
+            }
+        }
+        
+        // Default implementation for non-web platforms
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            tm.preload(all_assets[current_asset]).await;
+        }
+        
+        // Move to next asset
+        current_asset += 1;
+    }
+    
+    // All assets are loaded, draw a "complete" message
+    clear_background(DARKGREEN);
+    let completion_text = "Loading Complete!";
+    let text_size = 50;
+    let text_dimensions = measure_text(completion_text, None, text_size, 1.0);
+    let text_x = screen_width() / 2.0 - text_dimensions.width / 2.0;
+    let text_y = screen_height() / 2.0;
+    
+    draw_text(completion_text, text_x, text_y, text_size as f32, WHITE);
+    next_frame().await;
+    
+    // Short delay so users can see the completion message
+    let start_time = get_time();
+    while get_time() - start_time < 1.0 {
+        next_frame().await;
+    }
 
     let mut show = "assets/backcard.png";
     let mut lblplayer = Label::new("0", 450.0, 275.0, 30);
