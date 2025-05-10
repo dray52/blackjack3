@@ -95,168 +95,69 @@ async fn main() {
     let total_assets = all_assets.len();
     let mut current_asset = 0;
     
-    // Web-friendly asset loading with smoother transitions
+    // Web-friendly asset loading with minimal drawing to prevent flashing
     while current_asset < total_assets {
         // Calculate progress
         let loading_progress = current_asset as f32 / total_assets as f32;
         
-        // Clear screen with DARKGREEN (instead of default black) to match the game background
+        // Always use the same background color
         clear_background(DARKGREEN);
         
-        // Draw loading text
-        let loading_text = format!("Loading Assets: {:.0}%", loading_progress * 100.0);
-        let text_size = 40;
-        let text_dimensions = measure_text(&loading_text, None, text_size, 1.0);
+        // Draw title
+        let title_text = "BLACKJACK";
+        let title_size = 60;
+        let title_dim = measure_text(title_text, None, title_size, 1.0);
+        draw_text(
+            title_text,
+            screen_width() / 2.0 - title_dim.width / 2.0,
+            screen_height() / 3.0,
+            title_size as f32,
+            WHITE
+        );
         
-        // Center the text
-        let text_x = screen_width() / 2.0 - text_dimensions.width / 2.0;
-        let text_y = screen_height() / 2.0 - text_dimensions.height / 2.0;
-        
+        // Draw progress text
+        let loading_text = format!("Loading: {:.0}%", loading_progress * 100.0);
+        let text_size = 30;
+        let text_dim = measure_text(&loading_text, None, text_size, 1.0);
+        let text_x = screen_width() / 2.0 - text_dim.width / 2.0;
+        let text_y = screen_height() / 2.0;
         draw_text(&loading_text, text_x, text_y, text_size as f32, WHITE);
         
-        // Draw loading bar - with smoother appearance for web
+        // Draw loading bar
         let bar_width = screen_width() * 0.6;
         let bar_height = 30.0;
         let bar_x = screen_width() / 2.0 - bar_width / 2.0;
-        let bar_y = text_y + text_dimensions.height + 20.0;
+        let bar_y = text_y + 40.0;
         
-        // Draw background and progress sections together to reduce flashing
-        // First draw the entire background (no separate GRAY background)
-        draw_rectangle(bar_x, bar_y, bar_width, bar_height, DARKGRAY);
+        // Draw bar background
+        draw_rectangle(bar_x, bar_y, bar_width, bar_height, Color::new(0.0, 0.2, 0.0, 1.0));
         
-        // Then draw the progress portion
+        // Draw progress
         if loading_progress > 0.0 {
-            draw_rectangle(
-                bar_x, 
-                bar_y, 
-                bar_width * loading_progress, 
-                bar_height, 
-                GREEN
-            );
+            draw_rectangle(bar_x, bar_y, bar_width * loading_progress, bar_height, GREEN);
         }
         
-        // Draw border last to ensure it's always visible
-        draw_rectangle_lines(
-            bar_x, 
-            bar_y, 
-            bar_width, 
-            bar_height, 
-            2.0, 
-            WHITE
-        );
+        // Draw border
+        draw_rectangle_lines(bar_x, bar_y, bar_width, bar_height, 2.0, WHITE);
         
-        // Draw a card animation at the loading position - ensure it's drawn every frame
-        let animation_time = get_time() as f32;
-        let card_x = bar_x + (bar_width * loading_progress).max(10.0) - 20.0; // Ensure minimum position
-        let card_y = bar_y - 10.0;
-        let bounce_offset = (animation_time * 5.0).sin() * 5.0;
-        
-        // Draw card front (always show this, even at 0%)
-        draw_rectangle(
-            card_x,
-            card_y + bounce_offset, 
-            40.0, 
-            50.0, 
-            WHITE
-        );
-        
-        // Draw card back pattern
-        let pattern_size = 5.0;
-        for i in 0..5 {
-            for j in 0..7 {
-                if (i + j) % 2 == 0 {
-                    draw_rectangle(
-                        card_x + i as f32 * pattern_size + 5.0,
-                        card_y + bounce_offset + j as f32 * pattern_size + 5.0,
-                        pattern_size,
-                        pattern_size,
-                        RED
-                    );
-                }
-            }
-        }
-        
-        // Show current file being loaded - with more visibility for web
-        let file_name = all_assets[current_asset].split('/').last().unwrap_or(all_assets[current_asset]);
+        // Draw file name
+        let file_name = all_assets[current_asset].split('/').last().unwrap_or("");
         let file_text = format!("Loading: {}", file_name);
         let file_size = 20;
-        
-        // Draw with a dark background for better visibility
-        let text_width = measure_text(&file_text, None, file_size, 1.0).width;
-        draw_rectangle(
-            bar_x,
-            bar_y + bar_height + 10.0,
-            text_width + 20.0,
-            30.0,
-            Color::new(0.0, 0.0, 0.0, 0.5) // Semi-transparent black
-        );
-        
+        let file_dim = measure_text(&file_text, None, file_size, 1.0);
         draw_text(
             &file_text,
-            bar_x + 10.0,
-            bar_y + bar_height + 30.0,
+            screen_width() / 2.0 - file_dim.width / 2.0,
+            bar_y + bar_height + 40.0,
             file_size as f32,
             SKYBLUE
         );
         
-        // Ensure the frame is fully rendered before proceeding
+        // Update screen
         next_frame().await;
         
-        // For web compatibility, wrap the loading in a timeout mechanism
-        let load_start_time = get_time();
-        
-        #[cfg(target_arch = "wasm32")]
-        {
-            // Web-specific code with timeout 
-            let mut tries = 0;
-            let max_tries = 3;
-            
-            while tries < max_tries {
-                // Show retry message if needed
-                if tries > 0 {
-                    // Don't clear the screen for retry message to reduce flashing
-                    draw_rectangle(
-                        bar_x,
-                        bar_y + bar_height + 50.0,
-                        200.0,
-                        30.0,
-                        Color::new(0.0, 0.0, 0.0, 0.7) // Dark background for visibility
-                    );
-                    
-                    draw_text(
-                        &format!("Retrying {}/{}...", tries, max_tries),
-                        bar_x + 10.0, 
-                        bar_y + bar_height + 70.0,
-                        20.0,
-                        ORANGE
-                    );
-                    next_frame().await;
-                }
-                
-                // Try to load the asset
-                tm.preload(all_assets[current_asset]).await;
-                
-                // Check if we got it (by checking if it's in the texture map)
-                if tm.get_preload(all_assets[current_asset]).is_some() {
-                    break;
-                }
-                
-                tries += 1;
-                
-                // If we've been trying too long, just continue to avoid getting stuck
-                if get_time() - load_start_time > 5.0 {  // 5 second total timeout
-                    break;
-                }
-            }
-        }
-        
-        // Default implementation for non-web platforms
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            tm.preload(all_assets[current_asset]).await;
-        }
-        
-        // Move to next asset
+        // Load the asset
+        tm.preload(all_assets[current_asset]).await;
         current_asset += 1;
     }
     
