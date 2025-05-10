@@ -84,7 +84,18 @@ async fn main() {
         "assets/10diamond.png",        
         "assets/10spade.png",];
     let mut tm = TextureManager::new();
-tm.preload_all(&deck).await;
+    let mut using:Vec<&str> = vec![];
+for _i in 0..10 {
+    using.push(deck.choose().unwrap());
+
+}
+
+    tm.preload_all(&using).await;
+
+
+
+
+
 tm.preload("assets/backcard.png").await;
 
 
@@ -137,11 +148,11 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
 
         
         if rand_card.click() {
-            show = deck.choose().unwrap();
+            show = using.choose().unwrap();
             if turn == 3 {
             pcard3.set_preload(tm.get_preload(show).unwrap());
     
-            deck.retain(|&x| x != show);
+            using.retain(|&x| x != show);
             println!("{}", show);
             pvalue = playervalue(pvalue, show);
             println!("{}", pvalue);
@@ -149,7 +160,7 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
             }
             else if turn == 4 {
             pcard4.set_preload(tm.get_preload(show).unwrap());
-            deck.retain(|&x| x != show);
+            using.retain(|&x| x != show);
             println!("{}", show);
             pvalue = playervalue(pvalue, show);
             println!("{}", pvalue);
@@ -157,7 +168,7 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
             }
             else if turn == 5 {
             pcard5.set_preload(tm.get_preload(show).unwrap());
-            deck.retain(|&x| x != show);
+            using.retain(|&x| x != show);
             println!("{}", show);
             pvalue = playervalue(pvalue, show);
             println!("{}", pvalue);
@@ -172,20 +183,21 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
             
         }
         if start.click() {
+
             stand.enabled = true;
             rand_card.enabled = true;
-            show = deck.choose().unwrap();
+            show = using.choose().unwrap();
            pcard1.set_preload(tm.get_preload(show).unwrap());
-            deck.retain(|&x| x != show);
+            using.retain(|&x| x != show);
            pvalue = playervalue(pvalue, show);
-            show = deck.choose().unwrap();
+            show = using.choose().unwrap();
             pcard2.set_preload(tm.get_preload(show).unwrap());
-            deck.retain(|&x| x != show);
+            using.retain(|&x| x != show);
             pvalue = playervalue(pvalue, show);
             
-            show = deck.choose().unwrap();
+            show = using.choose().unwrap();
             dcard1.set_preload(tm.get_preload(show).unwrap());
-            deck.retain(|&x| x != show);
+            using.retain(|&x| x != show);
             dvalue = dealervalue(dvalue, show);
             start.enabled = false;  
             println!("player value: {}Dealer value: {}", pvalue, dvalue);
@@ -197,8 +209,8 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
             rand_card.enabled = false;
            
             while dvalue < 18 {
-                show = deck.choose().unwrap();
-                deck.retain(|&x| x != show);
+                show = using.choose().unwrap();
+                using.retain(|&x| x != show);
                 if dturn == 2{
                     
                 dcard2.set_preload(tm.get_preload(show).unwrap());
@@ -243,6 +255,17 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
             dcard3.set_preload(tm.get_preload("assets/backcard.png").unwrap());
             dcard4.set_preload(tm.get_preload("assets/backcard.png").unwrap());
             dcard5.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            using.clear();
+            tm.clear_all();
+            for _i in 0..10 {
+                using.push(deck.choose().unwrap());
+            
+            }
+            
+                tm.preload_all(&using).await;
+            
+            
+            tm.preload("assets/backcard.png").await;
             pvalue = 0;
             dvalue = 0;
             turn = 3;
