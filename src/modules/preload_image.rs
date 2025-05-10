@@ -1,33 +1,50 @@
 /*
-Made by:Mathew Dusome
-Date: 2025-05-03
-Program Details: Central texture manager for preloading and sharing textures
+Made by: Mathew Dusome
+Date: 2025-05-10
+Program Details: Central texture manager for preloading and sharing textures with loading screen support
 
 To use this:
 1. In your mod.rs file located in the modules folder add the following to the end of the file:
     pub mod preload_image;
     
-2. Add the following use command:
+2. Add the following use commands:
     use crate::modules::preload_image::TextureManager;
+    use crate::modules::preload_image::LoadingScreenOptions; // If you want to customize the loading screen
 
 3. Create and initialize a TextureManager:
-    let mut texture_manager = TextureManager::new();
+    let tm = TextureManager::new();
     
-4. Preload your textures at startup:
-    // Preload a list of textures
-    texture_manager.preload_all(&["assets/image1.png", "assets/image2.png"]).await;
-    
-    // Or preload individual textures
-    texture_manager.preload("assets/image3.png").await;
+4. Preload your textures at startup - multiple approaches:
+
+   // Option 1: Basic preloading without a loading screen
+   // Preload a list of textures
+   tm.preload_all(&["assets/image1.png", "assets/image2.png"]).await;
+   
+   // Or preload individual textures
+   tm.preload("assets/image3.png").await;
+   
+   // Option 2: Preload with a built-in loading screen (best for web)
+   // Using default loading screen appearance
+   tm.preload_with_loading_screen(&all_assets, None).await;
+   
+   // Using custom loading screen appearance
+   let loading_options = LoadingScreenOptions {
+       title: Some("MY GAME".to_string()),
+       background_color: DARKBLUE,
+       bar_fill_color: GOLD,
+       // Use default values for other options
+       ..Default::default()
+   };
+   tm.preload_with_loading_screen(&all_assets, Some(loading_options)).await;
     
 5. Get preloaded textures for use with StillImage - two approaches:
 
    // Approach 1: Using unwrap() - Simple but will panic if image doesn't exist
    // Only use this when you're certain the texture was preloaded
-   image_obj.set_preload(texture_manager.get_preload("assets/image1.png").unwrap());
+   img.set_preload(tm.get_preload("assets/image1.png").unwrap());
    
    // Approach 2: Using if let Some() - Safer, handles missing textures gracefully
-   if let Some(preloaded) = texture_manager.get_preload("assets/image2.png") {
+   if let Some(preloaded) = tm.get_preload("assets/image2.png") {
        img.set_preload(preloaded);
    } else {
        println!("Warning: Image not found in texture manager");
@@ -36,55 +53,42 @@ To use this:
     
 6. Access textures by index:
     // Using unwrap() approach:
-    img.set_preload(texture_manager.get_preload_by_index(0).unwrap());
+    img.set_preload(tm.get_preload_by_index(0).unwrap());
     
     // Using if let Some() approach:
-    if let Some(preloaded) = texture_manager.get_preload_by_index(1) {
+    if let Some(preloaded) = tm.get_preload_by_index(1) {
         img.set_preload(preloaded);
     }
     
 7. Getting the number of preloaded textures:
-    let count = texture_manager.texture_count();
+    let count = tm.texture_count();
     
-8. For implementing features like image slideshows, you can increment an index
-   and wrap around to cycle through all images:
-    current_index = (current_index + 1) % texture_manager.texture_count();
-    
-    // Using unwrap() (assumes there are textures available):
-    img.set_preload(texture_manager.get_preload_by_index(current_index).unwrap());
-    
-    // Or more safely with error handling:
-    if texture_manager.texture_count() > 0 {
-        if let Some(preloaded) = texture_manager.get_preload_by_index(current_index) {
-            img.set_preload(preloaded);
-        }
-    }
+8. Customizing the loading screen appearance:
+   // LoadingScreenOptions provides many customization options:
+   let custom_options = LoadingScreenOptions {
+       // Game title (optional)
+       title: Some("YOUR GAME TITLE".to_string()),
+       
+       // Colors
+       background_color: DARKGREEN,        // Background of the entire screen
+       bar_background_color: DARKGRAY,     // Background of the progress bar
+       bar_fill_color: GREEN,              // Fill color of the progress bar
+       text_color: WHITE,                  // Color for title and progress text
+       filename_color: SKYBLUE,            // Color for the filename text
+       
+       // Font sizes
+       title_font_size: 60,                // Size of the title text
+       progress_font_size: 30,             // Size of the progress percentage text
+       filename_font_size: 20,             // Size of the filename text
+       
+       // Completion behavior
+       show_completion_message: true,                    // Whether to show completion message
+       completion_message: "Loading Complete!".to_string(), // Custom completion message
+       completion_delay: 0.5,                            // Delay in seconds after completion
+   };
 
-9. For using with loading screens and coroutines:
-    // Create a coroutine for loading textures
-    let loading_task = start_coroutine(async move {
-        let mut tm = TextureManager::new();
-        for (index, asset_path) in assets.iter().enumerate() {
-            tm.preload(asset_path).await;
-            loading_progress = (index + 1) as f32 / total_assets as f32;
-            next_frame().await;
-        }
-        loading_complete = true;
-        tm
-    });
-    
-    // In loading screen loop
-    while !loading_complete {
-        clear_background(DARKGREEN);
-        draw_loading_progress(loading_progress);
-        next_frame().await;
-    }
-    
-    // Get the fully loaded texture manager
-    let tm = loading_task.await;
-
-Note: For clearing images, use the clear() method directly on the ImageObject:
-    img.clear();
+Note: This TextureManager implementation is thread-safe and web-compatible. The loading screen
+uses coroutines to load assets in the background, avoiding black flashing on web platforms.
 */
 use macroquad::texture::Texture2D;
 use std::collections::HashMap;
