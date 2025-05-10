@@ -229,7 +229,7 @@ impl TextureManager {
     
     /// Load assets with a built-in loading screen that works well for web
     /// This method handles all the complexities of asset loading and progress display
-    pub async fn preload_with_loading_screen(&self, assets: Vec<String>, options: Option<LoadingScreenOptions>) {
+    pub async fn preload_with_loading_screen(&self, assets: &[&str], options: Option<LoadingScreenOptions>) {
         // Use default options if none provided
         let options = options.unwrap_or_default();
         
@@ -240,7 +240,8 @@ impl TextureManager {
         // Start a background coroutine for loading assets WITHOUT awaiting it
         // This is the key to avoiding black flashes on web
         {
-            let assets_to_load = assets.clone();
+            // Convert &[&str] to Vec<String> for the coroutine to own its data
+            let assets_to_load: Vec<String> = assets.iter().map(|&s| s.to_string()).collect();
             let counter = loaded_counter.clone();
             let loading_tm = self.clone(); // Clone the TextureManager for the coroutine
             

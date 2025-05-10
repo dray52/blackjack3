@@ -92,9 +92,6 @@ async fn main() {
     // Create the texture manager
     let tm = TextureManager::new();
     
-    // Convert string slices to Strings
-    let asset_strings: Vec<String> = all_assets.iter().map(|s| s.to_string()).collect();
-    
     // Create custom loading screen options
     let loading_options = LoadingScreenOptions {
         title: Some("BLACKJACK".to_string()),
@@ -105,7 +102,8 @@ async fn main() {
     };
     
     // Use the built-in loading screen with custom options
-    tm.preload_with_loading_screen(asset_strings, Some(loading_options)).await;
+    // Pass the &all_assets slice directly without converting to Vec<String>
+    tm.preload_with_loading_screen(&all_assets, Some(loading_options)).await;
     
     // Continue with the rest of the game setup
     let mut show = "assets/backcard.png";
