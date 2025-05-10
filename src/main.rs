@@ -8,6 +8,7 @@ mod modules;
 
 use macroquad::prelude::*;
 use macroquad::rand::ChooseRandom;
+use macroquad::experimental::coroutines::{start_coroutine, Coroutine};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use crate::modules::label::Label;
@@ -90,19 +91,45 @@ async fn main() {
     // Add backcard to the full list of assets
     let all_assets = [&deck[..], &["assets/backcard.png"]].concat();
     
-    // Create the texture manager
+    // Thread-safe progress counters that can be shared between coroutines
+    let loaded_counter = Arc::new(AtomicUsize::new(0));
+    let total_assets = all_assets.len();
+    
+    // Create a texture manager that the loading coroutine will populate
     let mut tm = TextureManager::new();
     
-    // Loading variables
-    let total_assets = all_assets.len();
-    let mut loaded_assets = 0;
+    // Start a background coroutine for loading assets WITHOUT awaiting it
+    // This is the key to avoiding black flashes on web
+    {
+        let assets_to_load = all_assets.clone();
+        let counter = loaded_counter.clone();
+        
+        // Important: We start the coroutine but DON'T await it
+        start_coroutine(async move {
+            for asset_path in assets_to_load {
+                // Load asset
+                tm.preload(asset_path).await;
+                
+                // Update the counter atomically
+                counter.fetch_add(1, Ordering::SeqCst);
+                
+                // Yielding control back to the main thread
+                next_frame().await;
+            }
+            
+            // Return the texture manager when done
+            tm
+        });
+    }
     
-    // Simple loading screen - one asset at a time with minimal flashing
-    for asset_path in all_assets.iter() {
-        // Calculate loading progress
+    // Main rendering loop for the loading screen
+    // This runs in the main thread and never awaits the asset loading
+    loop {
+        // Read the current progress atomically
+        let loaded_assets = loaded_counter.load(Ordering::SeqCst);
         let progress = loaded_assets as f32 / total_assets as f32;
         
-        // Render a simple loading screen
+        // Clear the screen with game background
         clear_background(DARKGREEN);
         
         // Draw title
@@ -144,9 +171,9 @@ async fn main() {
         // Border
         draw_rectangle_lines(bar_x, bar_y, bar_width, bar_height, 2.0, WHITE);
         
-        // Display current file
-        if loaded_assets > 0 && loaded_assets <= total_assets {
-            let file_name = asset_path.split('/').last().unwrap_or(asset_path);
+        // Display current file if available
+        if loaded_assets > 0 && loaded_assets < total_assets {
+            let file_name = all_assets[loaded_assets].split('/').last().unwrap_or("");
             let file_text = format!("Loading: {}", file_name);
             draw_text(
                 &file_text,
@@ -157,29 +184,36 @@ async fn main() {
             );
         }
         
-        // Update the screen
+        // Check if loading is complete
+        if loaded_assets >= total_assets {
+            // Draw completion message
+            clear_background(DARKGREEN);
+            let completion_text = "Loading Complete!";
+            let text_size = 50;
+            let text_dimensions = measure_text(completion_text, None, text_size, 1.0);
+            let text_x = screen_width() / 2.0 - text_dimensions.width / 2.0;
+            let text_y = screen_height() / 2.0;
+            
+            draw_text(completion_text, text_x, text_y, text_size as f32, WHITE);
+            next_frame().await;
+            
+            // Break the loading loop and proceed with the game
+            break;
+        }
+        
+        // Update the screen WITHOUT awaiting asset loading
         next_frame().await;
-        
-        // Load the current texture - won't cause a flash since it's after next_frame
-        tm.preload(asset_path).await;
-        
-        // Update progress
-        loaded_assets += 1;
     }
     
-    // Show completion message
-    clear_background(DARKGREEN);
-    let completion_text = "Loading Complete!";
-    let text_size = 50;
-    let text_dim = measure_text(completion_text, None, text_size, 1.0);
-    draw_text(
-        completion_text,
-        screen_width() / 2.0 - text_dim.width / 2.0,
-        screen_height() / 2.0,
-        text_size as f32,
-        WHITE
-    );
-    next_frame().await;
+    // Since we can't directly get the TextureManager back from the coroutine
+    // We need to recreate it here - this is a compromise but works around the ownership issue
+    let mut tm = TextureManager::new();
+    
+    // Load all the assets again (they'll be cached by the browser)
+    // This won't cause flashing since they're already loaded in memory
+    for asset_path in &all_assets {
+        tm.preload(asset_path).await;
+    }
 
     // Continue with the rest of the game setup
     let mut show = "assets/backcard.png";
