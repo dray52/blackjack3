@@ -95,12 +95,12 @@ async fn main() {
     let total_assets = all_assets.len();
     let mut current_asset = 0;
     
-    // Web-friendly asset loading with timeout handling
+    // Web-friendly asset loading with smoother transitions
     while current_asset < total_assets {
         // Calculate progress
         let loading_progress = current_asset as f32 / total_assets as f32;
         
-        // Clear screen and draw loading interface
+        // Clear screen with DARKGREEN (instead of default black) to match the game background
         clear_background(DARKGREEN);
         
         // Draw loading text
@@ -114,25 +114,28 @@ async fn main() {
         
         draw_text(&loading_text, text_x, text_y, text_size as f32, WHITE);
         
-        // Draw loading bar
+        // Draw loading bar - with smoother appearance for web
         let bar_width = screen_width() * 0.6;
         let bar_height = 30.0;
         let bar_x = screen_width() / 2.0 - bar_width / 2.0;
         let bar_y = text_y + text_dimensions.height + 20.0;
         
-        // Background
-        draw_rectangle(bar_x, bar_y, bar_width, bar_height, GRAY);
+        // Draw background and progress sections together to reduce flashing
+        // First draw the entire background (no separate GRAY background)
+        draw_rectangle(bar_x, bar_y, bar_width, bar_height, DARKGRAY);
         
-        // Filled portion
-        draw_rectangle(
-            bar_x, 
-            bar_y, 
-            bar_width * loading_progress, 
-            bar_height, 
-            GREEN
-        );
+        // Then draw the progress portion
+        if loading_progress > 0.0 {
+            draw_rectangle(
+                bar_x, 
+                bar_y, 
+                bar_width * loading_progress, 
+                bar_height, 
+                GREEN
+            );
+        }
         
-        // Border
+        // Draw border last to ensure it's always visible
         draw_rectangle_lines(
             bar_x, 
             bar_y, 
@@ -142,13 +145,13 @@ async fn main() {
             WHITE
         );
         
-        // Draw a card animation at the loading position
+        // Draw a card animation at the loading position - ensure it's drawn every frame
         let animation_time = get_time() as f32;
-        let card_x = bar_x + (bar_width * loading_progress) - 20.0;
+        let card_x = bar_x + (bar_width * loading_progress).max(10.0) - 20.0; // Ensure minimum position
         let card_y = bar_y - 10.0;
         let bounce_offset = (animation_time * 5.0).sin() * 5.0;
         
-        // Draw card front
+        // Draw card front (always show this, even at 0%)
         draw_rectangle(
             card_x,
             card_y + bounce_offset, 
@@ -173,25 +176,35 @@ async fn main() {
             }
         }
         
-        // Show current file being loaded - truncate if too long for web display
+        // Show current file being loaded - with more visibility for web
         let file_name = all_assets[current_asset].split('/').last().unwrap_or(all_assets[current_asset]);
         let file_text = format!("Loading: {}", file_name);
         let file_size = 20;
+        
+        // Draw with a dark background for better visibility
+        let text_width = measure_text(&file_text, None, file_size, 1.0).width;
+        draw_rectangle(
+            bar_x,
+            bar_y + bar_height + 10.0,
+            text_width + 20.0,
+            30.0,
+            Color::new(0.0, 0.0, 0.0, 0.5) // Semi-transparent black
+        );
+        
         draw_text(
             &file_text,
-            bar_x,
+            bar_x + 10.0,
             bar_y + bar_height + 30.0,
             file_size as f32,
             SKYBLUE
         );
         
-        // Update the screen
+        // Ensure the frame is fully rendered before proceeding
         next_frame().await;
         
         // For web compatibility, wrap the loading in a timeout mechanism
         let load_start_time = get_time();
         
-        // Try loading the asset with a timeout for web safety
         #[cfg(target_arch = "wasm32")]
         {
             // Web-specific code with timeout 
@@ -201,11 +214,19 @@ async fn main() {
             while tries < max_tries {
                 // Show retry message if needed
                 if tries > 0 {
-                    clear_background(DARKGREEN);
+                    // Don't clear the screen for retry message to reduce flashing
+                    draw_rectangle(
+                        bar_x,
+                        bar_y + bar_height + 50.0,
+                        200.0,
+                        30.0,
+                        Color::new(0.0, 0.0, 0.0, 0.7) // Dark background for visibility
+                    );
+                    
                     draw_text(
                         &format!("Retrying {}/{}...", tries, max_tries),
-                        bar_x, 
-                        bar_y + bar_height + 60.0,
+                        bar_x + 10.0, 
+                        bar_y + bar_height + 70.0,
                         20.0,
                         ORANGE
                     );
