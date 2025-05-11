@@ -62,7 +62,7 @@ Note: For buttons with transparent backgrounds (set normal_color with alpha=0),
 only the text area is clickable, not the entire button area.
 */
 use macroquad::prelude::*;
-
+use crate::modules::scale::mouse_position_world as mouse_position;
 // Custom struct for ButtonText
 pub struct TextButton {
     x: f32,              // Now private

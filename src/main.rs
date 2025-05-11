@@ -13,8 +13,7 @@ use crate::modules::preload_image::TextureManager;
 use crate::modules::preload_image::LoadingScreenOptions;
 use crate::modules::still_image::StillImage;
 use crate::modules::text_button::TextButton;
-use crate::modules::text_input::TextInput;
-
+use crate::modules::scale::use_virtual_resolution; 
 /// Set up window settings before the app runs
 fn window_conf() -> Conf {
     Conf {
@@ -28,6 +27,7 @@ fn window_conf() -> Conf {
         ..Default::default()
     }
 }
+
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -113,10 +113,9 @@ async fn main() {
     let mut rand_card = TextButton::new(400.0, 400.0, 100.0, 50.0, "Hit".to_string(), BLUE, GREEN,30);
     let mut stand = TextButton::new(300.0, 400.0, 100.0, 50.0, "Stand".to_string(), BLUE, GREEN,30);
     let mut reset = TextButton::new(200.0, 400.0, 100.0, 50.0, "reset".to_string(), BLUE, GREEN,30);
-    let mut txtbet = TextInput::new(100.0, 500.0, 300.0, 50.0, 40.0);
+  
 
 
-txtbet.with_colors(WHITE, RED, BLACK, WHITE);
     rand_card.with_round(15.0);
     rand_card.with_border(RED, 5.0);
     start.with_round(15.0);
@@ -128,7 +127,7 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
     rand_card.enabled=false;
     stand.enabled=false;
     reset.enabled=false;
-    txtbet.set_text("bet");
+
 
 
     let mut pcard5 = StillImage::new(show, 75.0, 150.0, 345.0, 200.0,true,1.0).await;
@@ -147,8 +146,7 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
     let mut dturn = 2;
     rand::srand(miniquad::date::now() as u64);
     loop {
-        
-
+        use_virtual_resolution(1024.0, 768.0);
         clear_background(DARKGREEN);
         
 
@@ -289,7 +287,7 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
         dcard1.draw();
         lblplayer.draw();
         lbldealer.draw();
-        txtbet.draw();
+     
        
         
         next_frame().await;
