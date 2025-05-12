@@ -6,13 +6,14 @@ Program Details: <Program Description Here>
 
 mod modules;
 
-use macroquad::{prelude::*, rand::ChooseRandom};
+use macroquad::prelude::*;
+use macroquad::rand::ChooseRandom;
 use crate::modules::label::Label;
 use crate::modules::preload_image::TextureManager;
+use crate::modules::preload_image::LoadingScreenOptions;
 use crate::modules::still_image::StillImage;
 use crate::modules::text_button::TextButton;
-use crate::modules::text_input::TextInput;
-
+use crate::modules::scale::use_virtual_resolution; 
 /// Set up window settings before the app runs
 fn window_conf() -> Conf {
     Conf {
@@ -27,9 +28,10 @@ fn window_conf() -> Conf {
     }
 }
 
+
 #[macroquad::main(window_conf)]
 async fn main() {
- 
+    // Create card deck data
     let mut deck = vec![
         "assets/aceHeart.png",
         "assets/aceDiamond.png",
@@ -83,11 +85,27 @@ async fn main() {
         "assets/10heart.png",
         "assets/10diamond.png",        
         "assets/10spade.png",];
-    let mut tm = TextureManager::new();
-tm.preload_all(&deck).await;
-tm.preload("assets/backcard.png").await;
-
-
+    
+    // Add backcard to the full list of assets
+    let all_assets = [&deck[..], &["assets/backcard.png"]].concat();
+    
+    // Create the texture manager
+    let tm = TextureManager::new();
+    
+    // Create custom loading screen options
+    let loading_options = LoadingScreenOptions {
+        title: Some("BLACKJACK".to_string()),
+        background_color: DARKGREEN,
+        bar_fill_color: Color::new(0.2, 0.8, 0.2, 1.0), // Brighter green
+        // Use default values for other options
+        ..Default::default()
+    };
+    
+    // Use the built-in loading screen with custom options
+    // Pass the &all_assets slice directly without converting to Vec<String>
+    tm.preload_with_loading_screen(&all_assets, Some(loading_options)).await;
+    
+    // Continue with the rest of the game setup
     let mut show = "assets/backcard.png";
     let mut lblplayer = Label::new("0", 450.0, 275.0, 30);
     let mut lbldealer = Label::new("0", 450.0, 100.0, 30);
@@ -95,10 +113,9 @@ tm.preload("assets/backcard.png").await;
     let mut rand_card = TextButton::new(400.0, 400.0, 100.0, 50.0, "Hit".to_string(), BLUE, GREEN,30);
     let mut stand = TextButton::new(300.0, 400.0, 100.0, 50.0, "Stand".to_string(), BLUE, GREEN,30);
     let mut reset = TextButton::new(200.0, 400.0, 100.0, 50.0, "reset".to_string(), BLUE, GREEN,30);
-    let mut txtbet = TextInput::new(100.0, 500.0, 300.0, 50.0, 40.0);
+  
 
 
-txtbet.with_colors(WHITE, RED, BLACK, WHITE);
     rand_card.with_round(15.0);
     rand_card.with_border(RED, 5.0);
     start.with_round(15.0);
@@ -110,7 +127,7 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
     rand_card.enabled=false;
     stand.enabled=false;
     reset.enabled=false;
-    txtbet.set_text("bet");
+
 
 
     let mut pcard5 = StillImage::new(show, 75.0, 150.0, 345.0, 200.0,true,1.0).await;
@@ -129,8 +146,7 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
     let mut dturn = 2;
     rand::srand(miniquad::date::now() as u64);
     loop {
-        
-
+        use_virtual_resolution(1024.0, 768.0);
         clear_background(DARKGREEN);
         
 
@@ -271,7 +287,7 @@ txtbet.with_colors(WHITE, RED, BLACK, WHITE);
         dcard1.draw();
         lblplayer.draw();
         lbldealer.draw();
-        txtbet.draw();
+     
        
         
         next_frame().await;

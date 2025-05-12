@@ -173,6 +173,28 @@ impl StillImage {
         self.y = pos[1];
     }
 
+    // Get and set x position
+    #[allow(unused)]
+    pub fn get_x(&self) -> f32 {
+        self.x
+    }
+
+    #[allow(unused)]
+    pub fn set_x(&mut self, x: f32) {
+        self.x = x;
+    }
+
+    // Get and set y position
+    #[allow(unused)]
+    pub fn get_y(&self) -> f32 {
+        self.y
+    }
+
+    #[allow(unused)]
+    pub fn set_y(&mut self, y: f32) {
+        self.y = y;
+    }
+
     // Get the original filename/path of the loaded image
     #[allow(unused)]
     pub fn get_filename(&self) -> &str {
@@ -181,18 +203,10 @@ impl StillImage {
 
     // Get the transparency mask (bitmask)
     #[allow(unused)]
-    pub fn get_mask(&self) -> Vec<u8> {
-        match &self.transparency_mask {
-            Some(mask) => mask.clone(),
-            None => {
-                // If there's no mask (image has no transparency), create a fully opaque mask
-                let tex_width = self.texture.width() as usize;
-                let tex_height = self.texture.height() as usize;
-                let mask_size = (tex_width * tex_height + 7) / 8;
-                vec![0xFF; mask_size] // 0xFF means all bits are 1 (fully opaque)
-            }
-        }
+    pub fn get_mask(&self) -> Option<Vec<u8>> {
+        self.transparency_mask.clone()
     }
+
     #[allow(unused)]
     pub async fn set_texture(&mut self, texture_path: &str) {
         let (texture, transparency_mask) = set_texture_main(texture_path).await;
@@ -297,8 +311,15 @@ impl StillImage {
 async fn generate_mask(texture_path: &str, width: usize, height: usize) -> Option<Vec<u8>> {
     let image = load_image(texture_path).await.unwrap();
     let pixels = image.bytes; // Image pixels in RGBA8 format
+    
+    // Check if the image format has an alpha channel at all (RGBA)
+    // If pixels length isn't divisible by 4, it's not RGBA format
+    if pixels.len() != width * height * 4 {
+        // No alpha channel, return None immediately
+        return None;
+    }
 
-    let mut mask = vec![0; (width * height + 7) / 8]; // Create a bitmask with enough bytes
+   
     let mut has_transparency = false;
 
     // First, scan to see if the image has any transparency at all
@@ -321,7 +342,8 @@ async fn generate_mask(texture_path: &str, width: usize, height: usize) -> Optio
     if !has_transparency {
         return None;
     }
-
+ // Only create the mask if we know the image has transparency
+ let mut mask = vec![0; (width * height + 7) / 8]; // Create a bitmask with enough bytes
     // Otherwise, create the transparency mask
     for y in 0..height {
         for x in 0..width {
