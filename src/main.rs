@@ -158,9 +158,9 @@ async fn main() {
     if start.click() {
             let bet_amount = txtbet.get_text();
             if let Ok(amount) = bet_amount.trim().parse::<i32>() {
-                if chips < amount {
+                if chips < amount && amount > 0 {
                     lblwin.set_text(&format!("Not Enough Chips"));
-                } else {    txtbet.set_text("");
+                } else {   
                     bet = amount;
                     chips -= bet;
                     lblchips.set_text(&format!("Chips:\n {}", chips));
@@ -291,7 +291,7 @@ async fn main() {
             lblwin.set_text(&format!(""));
         }
 
-        
+
         pcard5.draw();
         pcard4.draw();
         pcard3.draw();
