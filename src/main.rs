@@ -291,6 +291,7 @@ async fn main() {
             lblwin.set_text(&format!(""));
         }
 
+        
         pcard5.draw();
         pcard4.draw();
         pcard3.draw();
