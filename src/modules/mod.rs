@@ -18,3 +18,4 @@ use crate::modules::grid::draw_grid;
  pub mod still_image;
  pub mod text_button;
  pub mod scale;
+ pub mod text_input;
