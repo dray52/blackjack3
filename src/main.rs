@@ -1,7 +1,7 @@
 /*
-By: <Your Name Here>
+By: Draydon Levesque
 Date: 2025-05-09
-Program Details: <Program Description Here>
+Program Details: Blackjack
 */
 
 mod modules;
