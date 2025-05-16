@@ -6,7 +6,7 @@ Program Details: Blackjack
 
 mod modules;
 
-//use std::process::exit;
+use std::process::exit;
 
 use crate::modules::label::Label;
 use crate::modules::preload_image::LoadingScreenOptions;
@@ -15,6 +15,7 @@ use crate::modules::scale::use_virtual_resolution;
 use crate::modules::still_image::StillImage;
 use crate::modules::text_button::TextButton;
 use crate::modules::text_input::TextInput;
+use crate::modules::messagebox::{MessageBox, MessageBoxResult};
 use macroquad::prelude::*;
 use macroquad::rand::ChooseRandom;
 /// Set up window settings before the app runs
@@ -110,6 +111,7 @@ async fn main() {
 
     // Continue with the rest of the game setup
     let mut show = "assets/backcard.png";
+    let mut end_game = MessageBox::info("Out Of Chips", "Please Restart Game To Play Again");
     let mut lblchips = Label::new("chips \n 500", 425.0, 525.0, 30);
     let mut lblplayer = Label::new("0", 450.0, 275.0, 30);
     let mut lbldealer = Label::new("0", 450.0, 100.0, 30);
@@ -150,18 +152,28 @@ async fn main() {
     let mut dturn = 2;
     let mut chips = 500;
     let mut bet = 0;
+   // let mut prebet = 0;
+    
 
     rand::srand(miniquad::date::now() as u64);
     loop {
         use_virtual_resolution(1024.0, 768.0);
         clear_background(DARKGREEN);
     if start.click() {
+       // prebet = chips;
+        lblwin.set_text(&format!(""));
             let bet_amount = txtbet.get_text();
             if let Ok(amount) = bet_amount.trim().parse::<i32>() {
                 if chips < amount && amount > 0 {
                     lblwin.set_text(&format!("Not Enough Chips"));
-                } else {   
+                } 
+                else {   
                     bet = amount;
+                    if bet<=0 {
+                        lblwin.set_text(&format!("Invalid Bet"));
+                        
+                    }
+                    else{
                     chips -= bet;
                     lblchips.set_text(&format!("Chips:\n {}", chips));
                     stand.enabled = true;
@@ -185,7 +197,7 @@ async fn main() {
                     lblplayer.set_text(&format!("Player value:\n {}", pvalue));
                     println!("your bet is {}", bet);
                 }
-            } else {
+            }} else {
                 lblwin.set_text(&format!("Invalid bet"));
             }
         }
@@ -219,6 +231,7 @@ async fn main() {
                 rand_card.enabled = false;
                 stand.enabled = false;
                 reset.enabled = true;
+               // prebet = chips;
                 lblwin.set_text(&format!("You lose"));
             }
             lblplayer.set_text(&format!("Player value:\n {}", pvalue));
@@ -254,6 +267,8 @@ async fn main() {
                 lblchips.set_text(&format!("Chips:\n {}", chips));
                 lblwin.set_text(&format!("You Win"));
             } else if dwincheck(pvalue, dvalue) == true {
+                //prebet = chips;
+               
                 
            
                 lblwin.set_text(&format!("You lose"));
@@ -289,7 +304,11 @@ async fn main() {
             lblplayer.set_text(&format!("Player value:\n {}", pvalue));
             lbldealer.set_text(&format!("Dealer value:\n {}", dvalue));
             lblwin.set_text(&format!(""));
-        }
+        }/*if chips == 0 && bet != prebet{
+            end_game.show(); 
+            prebet = bet;
+            lblwin.set_text(&format!("No More Chips"));
+        }*/
 
 
         pcard5.draw();
@@ -307,7 +326,10 @@ async fn main() {
         lblwin.draw();
         lblchips.draw();
         txtbet.draw();
+        end_game.draw();
         
+
+      
         next_frame().await;
     }
 }
