@@ -9,13 +9,13 @@ mod modules;
 use std::process::exit;
 
 use crate::modules::label::Label;
+use crate::modules::messagebox::{MessageBox, MessageBoxResult};
 use crate::modules::preload_image::LoadingScreenOptions;
 use crate::modules::preload_image::TextureManager;
 use crate::modules::scale::use_virtual_resolution;
 use crate::modules::still_image::StillImage;
 use crate::modules::text_button::TextButton;
 use crate::modules::text_input::TextInput;
-use crate::modules::messagebox::{MessageBox, MessageBoxResult};
 use macroquad::prelude::*;
 use macroquad::rand::ChooseRandom;
 /// Set up window settings before the app runs
@@ -35,60 +35,8 @@ fn window_conf() -> Conf {
 #[macroquad::main(window_conf)]
 async fn main() {
     // Create card deck data
-    let mut deck = vec![
-        "assets/aceHeart.png",
-        "assets/aceDiamond.png",
-        "assets/aceClubs.png",
-        "assets/aceSpade.png",
-        "assets/jackHeart.png",
-        "assets/jackDiamond.png",
-        "assets/jackClubs.png",
-        "assets/jackSpade.png",
-        "assets/queenHeart.png",
-        "assets/queenDiamond.png",
-        "assets/queenClubs.png",
-        "assets/queenSpade.png",
-        "assets/kingHeart.png",
-        "assets/kingDiamond.png",
-        "assets/kingClubs.png",
-        "assets/kingSpade.png",
-        "assets/02clubs.png",
-        "assets/02heart.png",
-        "assets/02diamond.png",
-        "assets/02spade.png",
-        "assets/03clubs.png",
-        "assets/03heart.png",
-        "assets/03diamond.png",
-        "assets/03spade.png",
-        "assets/04clubs.png",
-        "assets/04heart.png",
-        "assets/04diamond.png",
-        "assets/04spade.png",
-        "assets/05clubs.png",
-        "assets/05heart.png",
-        "assets/05diamond.png",
-        "assets/05spade.png",
-        "assets/06clubs.png",
-        "assets/06heart.png",
-        "assets/06diamond.png",
-        "assets/06spade.png",
-        "assets/07clubs.png",
-        "assets/07heart.png",
-        "assets/07diamond.png",
-        "assets/07spade.png",
-        "assets/08clubs.png",
-        "assets/08heart.png",
-        "assets/08diamond.png",
-        "assets/08spade.png",
-        "assets/09clubs.png",
-        "assets/09heart.png",
-        "assets/09diamond.png",
-        "assets/09spade.png",
-        "assets/10clubs.png",
-        "assets/10heart.png",
-        "assets/10diamond.png",
-        "assets/10spade.png",
-    ];
+    let mut deck = deck_reset();
+  
 
     // Add backcard to the full list of assets
     let all_assets = [&deck[..], &["assets/backcard.png"]].concat();
@@ -111,14 +59,11 @@ async fn main() {
 
     // Continue with the rest of the game setup
     let mut show = "assets/backcard.png";
-    let mut end_game = MessageBox::confirm(
-    "Out Of Chips",
-    "You have run out of chips. Do you want to play again?",
-);
-    let mut lblchips = Label::new("chips \n 500", 425.0, 525.0, 30);
-    let mut lblplayer = Label::new("0", 450.0, 275.0, 30);
-    let mut lbldealer = Label::new("0", 450.0, 100.0, 30);
-    let mut lblwin = Label::new("", 450.0, 190.0, 30);
+    let mut end_game = MessageBox::confirm("Out Of Chips", "You have run out of chips. Do you want to play again?");
+    let lblchips = Label::new("chips \n 500", 425.0, 525.0, 30);
+    let lblplayer = Label::new("0", 450.0, 275.0, 30);
+    let lbldealer = Label::new("0", 450.0, 100.0, 30);
+    let lblwin = Label::new("", 450.0, 190.0, 30);
     let mut start = TextButton::new(500.0, 400.0, 100.0, 50.0, "Start".to_string(), BLUE, GREEN, 30);
     let mut rand_card = TextButton::new(400.0, 400.0, 100.0, 50.0, "Hit".to_string(), BLUE, GREEN, 30);
     let mut stand = TextButton::new(300.0, 400.0, 100.0, 50.0, "Stand".to_string(), BLUE, GREEN, 30);
@@ -139,110 +84,106 @@ async fn main() {
     stand.enabled = false;
     reset.enabled = false;
 
-    let mut pcard5 = StillImage::new(show, 75.0, 150.0, 345.0, 200.0, true, 1.0).await;
-    let mut pcard4 = StillImage::new(show, 75.0, 150.0, 290.0, 200.0, true, 1.0).await;
-    let mut pcard3 = StillImage::new(show, 75.0, 150.0, 235.0, 200.0, true, 1.0).await;
-    let mut pcard2 = StillImage::new(show, 75.0, 150.0, 180.0, 200.0, true, 1.0).await;
-    let mut pcard1 = StillImage::new(show, 75.0, 150.0, 125.0, 200.0, true, 1.0).await;
-    let mut dcard1 = StillImage::new(show, 75.0, 150.0, 125.0, 25.0, true, 1.0).await;
-    let mut dcard2 = StillImage::new(show, 75.0, 150.0, 180.0, 25.0, true, 1.0).await;
-    let mut dcard3 = StillImage::new(show, 75.0, 150.0, 235.0, 25.0, true, 1.0).await;
-    let mut dcard4 = StillImage::new(show, 75.0, 150.0, 290.0, 25.0, true, 1.0).await;
-    let mut dcard5 = StillImage::new(show, 75.0, 150.0, 345.0, 25.0, true, 1.0).await;
+    let pcard5 = StillImage::new(show, 75.0, 150.0, 345.0, 200.0, true, 1.0).await;
+    let pcard4 = StillImage::new(show, 75.0, 150.0, 290.0, 200.0, true, 1.0).await;
+    let pcard3 = StillImage::new(show, 75.0, 150.0, 235.0, 200.0, true, 1.0).await;
+    let pcard2 = StillImage::new(show, 75.0, 150.0, 180.0, 200.0, true, 1.0).await;
+    let pcard1 = StillImage::new(show, 75.0, 150.0, 125.0, 200.0, true, 1.0).await;
+    let dcard1 = StillImage::new(show, 75.0, 150.0, 125.0, 25.0, true, 1.0).await;
+    let dcard2 = StillImage::new(show, 75.0, 150.0, 180.0, 25.0, true, 1.0).await;
+    let dcard3 = StillImage::new(show, 75.0, 150.0, 235.0, 25.0, true, 1.0).await;
+    let dcard4 = StillImage::new(show, 75.0, 150.0, 290.0, 25.0, true, 1.0).await;
+    let dcard5 = StillImage::new(show, 75.0, 150.0, 345.0, 25.0, true, 1.0).await;
     let mut pvalue = 0;
     let mut dvalue = 0;
     let mut turn = 3;
     let mut dturn = 2;
     let mut chips = 500;
     let mut bet = 0;
-   let mut prebet = 0;
+    let mut prebet = 0;
 
-   
-    
+    let mut labels: Vec<Label> = vec![lblchips, lblplayer, lbldealer, lblwin];
+
+    let mut images: Vec<StillImage> = vec![pcard1, pcard2, pcard3, pcard4, pcard5, dcard1, dcard2, dcard3, dcard4, dcard5];
 
     rand::srand(miniquad::date::now() as u64);
     loop {
         use_virtual_resolution(1024.0, 768.0);
         clear_background(DARKGREEN);
-    if start.click() {
-       prebet = chips;
-        lblwin.set_text(&format!(""));
+        if start.click() {
+            prebet = chips;
+            labels[3].set_text(&format!(""));
             let bet_amount = txtbet.get_text();
             if let Ok(amount) = bet_amount.trim().parse::<i32>() {
                 if chips < amount && amount > 0 {
-                    lblwin.set_text(&format!("Not Enough Chips"));
-                } 
-                else {   
+                    labels[3].set_text(&format!("Not Enough Chips"));
+                } else {
                     bet = amount;
-                    if bet<=0 {
-                        lblwin.set_text(&format!("Invalid Bet"));
-                        
+                    if bet <= 0 {
+                        labels[3].set_text(&format!("Invalid Bet"));
+                    } else {
+                        chips -= bet;
+                        labels[0].set_text(&format!("Chips:\n {}", chips));
+                        stand.enabled = true;
+                        rand_card.enabled = true;
+                        show = deck.choose().unwrap();
+
+                        images[0].set_preload(tm.get_preload(show).unwrap());
+                        deck.retain(|&x| x != show);
+                        pvalue = playervalue(pvalue, show);
+                        show = deck.choose().unwrap();
+                        images[1].set_preload(tm.get_preload(show).unwrap());
+                        deck.retain(|&x| x != show);
+                        pvalue = playervalue(pvalue, show);
+
+                        show = deck.choose().unwrap();
+                        images[5].set_preload(tm.get_preload(show).unwrap());
+                        deck.retain(|&x| x != show);
+                        dvalue = dealervalue(dvalue, show);
+                        start.enabled = false;
+                        labels[2].set_text(&format!("Dealer value:\n {}", dvalue));
+                        labels[1].set_text(&format!("Player value:\n {}", pvalue));
+                        println!("your bet is {}", bet);
                     }
-                    else{
-                    chips -= bet;
-                    lblchips.set_text(&format!("Chips:\n {}", chips));
-                    stand.enabled = true;
-                    rand_card.enabled = true;
-                    show = deck.choose().unwrap();
-
-                    pcard1.set_preload(tm.get_preload(show).unwrap());
-                    deck.retain(|&x| x != show);
-                    pvalue = playervalue(pvalue, show);
-                    show = deck.choose().unwrap();
-                    pcard2.set_preload(tm.get_preload(show).unwrap());
-                    deck.retain(|&x| x != show);
-                    pvalue = playervalue(pvalue, show);
-
-                    show = deck.choose().unwrap();
-                    dcard1.set_preload(tm.get_preload(show).unwrap());
-                    deck.retain(|&x| x != show);
-                    dvalue = dealervalue(dvalue, show);
-                    start.enabled = false;
-                    lbldealer.set_text(&format!("Dealer value:\n {}", dvalue));
-                    lblplayer.set_text(&format!("Player value:\n {}", pvalue));
-                    println!("your bet is {}", bet);
                 }
-            }} else {
-                lblwin.set_text(&format!("Invalid bet"));
+            } else {
+                labels[3].set_text(&format!("Invalid bet"));
             }
         }
         if rand_card.click() {
-
             show = deck.choose().unwrap();
             if turn == 3 {
-                pcard3.set_preload(tm.get_preload(show).unwrap());
+                images[2].set_preload(tm.get_preload(show).unwrap());
 
                 deck.retain(|&x| x != show);
-              
+
                 pvalue = playervalue(pvalue, show);
-               
+
                 turn = 4;
             } else if turn == 4 {
-                pcard4.set_preload(tm.get_preload(show).unwrap());
+                images[3].set_preload(tm.get_preload(show).unwrap());
                 deck.retain(|&x| x != show);
-                
+
                 pvalue = playervalue(pvalue, show);
-                
+
                 turn = 5;
             } else if turn == 5 {
-                pcard5.set_preload(tm.get_preload(show).unwrap());
+                images[4].set_preload(tm.get_preload(show).unwrap());
                 deck.retain(|&x| x != show);
-               
+
                 pvalue = playervalue(pvalue, show);
-             
             }
             if pvalue > 21 {
-                
                 rand_card.enabled = false;
                 stand.enabled = false;
                 reset.enabled = true;
                 prebet = chips;
-                lblwin.set_text(&format!("You lose"));
+                labels[3].set_text(&format!("You lose"));
             }
-            lblplayer.set_text(&format!("Player value:\n {}", pvalue));
+            labels[1].set_text(&format!("Player value:\n {}", pvalue));
             println!("your bet is {}", bet);
         }
-        
+
         if stand.click() {
             stand.enabled = false;
             rand_card.enabled = false;
@@ -251,52 +192,41 @@ async fn main() {
                 show = deck.choose().unwrap();
                 deck.retain(|&x| x != show);
                 if dturn == 2 {
-                    dcard2.set_preload(tm.get_preload(show).unwrap());
+                    images[6].set_preload(tm.get_preload(show).unwrap());
                     dturn = 3;
                 } else if dturn == 3 {
-                    dcard3.set_preload(tm.get_preload(show).unwrap());
+                    images[7].set_preload(tm.get_preload(show).unwrap());
                     dturn = 4;
                 } else if dturn == 4 {
-                    dcard4.set_preload(tm.get_preload(show).unwrap());
+                    images[8].set_preload(tm.get_preload(show).unwrap());
                     dturn = 5;
                 } else if dturn == 5 {
-                    dcard5.set_preload(tm.get_preload(show).unwrap());
+                    images[9].set_preload(tm.get_preload(show).unwrap());
                 }
                 dvalue = dealervalue(dvalue, show);
             }
-            lbldealer.set_text(&format!("Dealer value:\n {}", dvalue));
-           
+            labels[2].set_text(&format!("Dealer value:\n {}", dvalue));
+
             if pwincheck(pvalue, dvalue) == true {
-           
-                chips += bet*2;
-                lblchips.set_text(&format!("Chips:\n {}", chips));
-                lblwin.set_text(&format!("You Win"));
+                chips += bet * 2;
+                labels[0].set_text(&format!("Chips:\n {}", chips));
+                labels[3].set_text(&format!("You Win"));
             } else if dwincheck(pvalue, dvalue) == true {
                 prebet = chips;
-               
-                
-           
-                lblwin.set_text(&format!("You lose"));
+
+                labels[3].set_text(&format!("You lose"));
             } else {
-                
                 chips += bet;
-                lblchips.set_text(&format!("Chips:\n {}", chips));
-                lblwin.set_text(&format!("You Draw"));
+                labels[0].set_text(&format!("Chips:\n {}", chips));
+                labels[3].set_text(&format!("You Draw"));
             }
             println!("your bet is {}", bet);
             reset.enabled = true;
         }
         if reset.click() {
-            pcard1.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            pcard2.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            pcard3.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            pcard4.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            pcard5.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            dcard1.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            dcard2.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            dcard3.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            dcard4.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            dcard5.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            for i in 0..10 {
+                        images[i].set_preload(tm.get_preload("assets/backcard.png").unwrap());
+                    }
             pvalue = 0;
             dvalue = 0;
             turn = 3;
@@ -306,92 +236,81 @@ async fn main() {
             rand_card.enabled = false;
             stand.enabled = false;
             reset.enabled = false;
-            lblplayer.set_text(&format!("Player value:\n {}", pvalue));
-            lbldealer.set_text(&format!("Dealer value:\n {}", dvalue));
+            labels[1].set_text(&format!("Player value:\n {}", pvalue));
+            labels[2].set_text(&format!("Dealer value:\n {}", dvalue));
             txtbet.set_text(&format!(""));
-            lblwin.set_text(&format!(""));
-        }if chips == 0 && bet != prebet{
-            end_game.show(); 
+            labels[3].set_text(&format!(""));
+            if deck.len() <=10 {
+            deck = deck_reset();
+            }
+            
+        }
+        if chips == 0 && bet != prebet {
+            end_game.show();
             prebet = bet;
-            lblwin.set_text(&format!("No More Chips"));
+            labels[3].set_text(&format!("No More Chips"));
         }
 
         if let Some(result) = end_game.draw() {
-    // Only runs when a button was clicked or dialog was closed
-    match result {
-        MessageBoxResult::ButtonPressed(0) => {
-            // "Yes" button pressed
-                pcard1.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            pcard2.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            pcard3.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            pcard4.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            pcard5.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            dcard1.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            dcard2.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            dcard3.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            dcard4.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            dcard5.set_preload(tm.get_preload("assets/backcard.png").unwrap());
-            pvalue = 0;
-            dvalue = 0;
-            turn = 3;
-            dturn = 2;
-            bet = 0;
-            start.enabled = true;
-            rand_card.enabled = false;
-            stand.enabled = false;
-            reset.enabled = false;
-            lblplayer.set_text(&format!("Player value:\n {}", pvalue));
-            lbldealer.set_text(&format!("Dealer value:\n {}", dvalue));
-            lblwin.set_text(&format!(""));
-                chips = 500;
-                lblchips.set_text(&format!("Chips:\n {}", chips));
-                reset.enabled=false;
-                txtbet.set_text(&format!(""));
-
-            
-        },
-        MessageBoxResult::ButtonPressed(1) => {
-            // "No" button pressed
-            // Continue without saving...
-            exit(0);
-        },
-        MessageBoxResult::ButtonPressed(2) => {
-            // "Cancel" button pressed (for confirm_with_cancel dialogs)
-            // Handle cancel operation...
-            exit(0);
-        },
-        #[allow(unused)]
-        MessageBoxResult::ButtonPressed(_) => {
-            // IMPORTANT: This catch-all pattern is required by the Rust compiler
-            // even for simple confirm dialogs to ensure all possible values are covered
-            exit(0);
-        },
-        MessageBoxResult::Closed => {
-            // Dialog closed with X or Escape key
-            // Handle as cancel...
-            exit(0);
+            // Only runs when a button was clicked or dialog was closed
+            match result {
+                MessageBoxResult::ButtonPressed(0) => {
+                    // "Yes" button pressed
+                    for i in 0..10 {
+                        images[i].set_preload(tm.get_preload("assets/backcard.png").unwrap());
+                    }
+         
+                    pvalue = 0;
+                    dvalue = 0;
+                    turn = 3;
+                    dturn = 2;
+                    bet = 0;
+                    start.enabled = true;
+                    rand_card.enabled = false;
+                    stand.enabled = false;
+                    reset.enabled = false;
+                    labels[1].set_text(&format!("Player value:\n {}", pvalue));
+                    labels[2].set_text(&format!("Dealer value:\n {}", dvalue));
+                    labels[3].set_text(&format!(""));
+                    chips = 500;
+                    labels[0].set_text(&format!("Chips:\n {}", chips));
+                    reset.enabled = false;
+                    txtbet.set_text(&format!(""));
+                    
+                }
+                MessageBoxResult::ButtonPressed(1) => {
+                    // "No" button pressed
+                    // Continue without saving...
+                    exit(0);
+                }
+                MessageBoxResult::ButtonPressed(2) => {
+                    // "Cancel" button pressed (for confirm_with_cancel dialogs)
+                    // Handle cancel operation...
+                    exit(0);
+                }
+                #[allow(unused)]
+                MessageBoxResult::ButtonPressed(_) => {
+                    // IMPORTANT: This catch-all pattern is required by the Rust compiler
+                    // even for simple confirm dialogs to ensure all possible values are covered
+                    exit(0);
+                }
+                MessageBoxResult::Closed => {
+                    // Dialog closed with X or Escape key
+                    // Handle as cancel...
+                    exit(0);
+                }
+            }
         }
-    }
-}
-        pcard5.draw();
-        pcard4.draw();
-        pcard3.draw();
-        pcard2.draw();
-        pcard1.draw();
-        dcard5.draw();
-        dcard4.draw();
-        dcard3.draw();
-        dcard2.draw();
-        dcard1.draw();
-        lblplayer.draw();
-        lbldealer.draw();
-        lblwin.draw();
-        lblchips.draw();
+        for image in &images {
+            image.draw();
+        }
+        for label in &labels {
+            label.draw();
+        }
+
         txtbet.draw();
         end_game.draw();
-        
 
-      
         next_frame().await;
     }
 }
@@ -453,4 +372,62 @@ fn dwincheck(pvalue: i32, dvalue: i32) -> bool {
     } else {
         return false;
     }
+}
+fn deck_reset() -> Vec<&'static str> {
+    let mut deck: Vec<&'static str> = Vec::new();
+   deck = vec![
+        "assets/aceHeart.png",
+        "assets/aceDiamond.png",
+        "assets/aceClubs.png",
+        "assets/aceSpade.png",
+        "assets/jackHeart.png",
+        "assets/jackDiamond.png",
+        "assets/jackClubs.png",
+        "assets/jackSpade.png",
+        "assets/queenHeart.png",
+        "assets/queenDiamond.png",
+        "assets/queenClubs.png",
+        "assets/queenSpade.png",
+        "assets/kingHeart.png",
+        "assets/kingDiamond.png",
+        "assets/kingClubs.png",
+        "assets/kingSpade.png",
+        "assets/02clubs.png",
+        "assets/02heart.png",
+        "assets/02diamond.png",
+        "assets/02spade.png",
+        "assets/03clubs.png",
+        "assets/03heart.png",
+        "assets/03diamond.png",
+        "assets/03spade.png",
+        "assets/04clubs.png",
+        "assets/04heart.png",
+        "assets/04diamond.png",
+        "assets/04spade.png",
+        "assets/05clubs.png",
+        "assets/05heart.png",
+        "assets/05diamond.png",
+        "assets/05spade.png",
+        "assets/06clubs.png",
+        "assets/06heart.png",
+        "assets/06diamond.png",
+        "assets/06spade.png",
+        "assets/07clubs.png",
+        "assets/07heart.png",
+        "assets/07diamond.png",
+        "assets/07spade.png",
+        "assets/08clubs.png",
+        "assets/08heart.png",
+        "assets/08diamond.png",
+        "assets/08spade.png",
+        "assets/09clubs.png",
+        "assets/09heart.png",
+        "assets/09diamond.png",
+        "assets/09spade.png",
+        "assets/10clubs.png",
+        "assets/10heart.png",
+        "assets/10diamond.png",
+        "assets/10spade.png",
+    ];
+    deck
 }
