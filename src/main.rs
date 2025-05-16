@@ -111,7 +111,10 @@ async fn main() {
 
     // Continue with the rest of the game setup
     let mut show = "assets/backcard.png";
-    let mut end_game = MessageBox::info("Out Of Chips", "Please Restart Game To Play Again");
+    let mut end_game = MessageBox::confirm(
+    "Out Of Chips",
+    "You have run out of chips. Do you want to play again?",
+);
     let mut lblchips = Label::new("chips \n 500", 425.0, 525.0, 30);
     let mut lblplayer = Label::new("0", 450.0, 275.0, 30);
     let mut lbldealer = Label::new("0", 450.0, 100.0, 30);
@@ -152,7 +155,9 @@ async fn main() {
     let mut dturn = 2;
     let mut chips = 500;
     let mut bet = 0;
-   // let mut prebet = 0;
+   let mut prebet = 0;
+
+   
     
 
     rand::srand(miniquad::date::now() as u64);
@@ -160,7 +165,7 @@ async fn main() {
         use_virtual_resolution(1024.0, 768.0);
         clear_background(DARKGREEN);
     if start.click() {
-       // prebet = chips;
+       prebet = chips;
         lblwin.set_text(&format!(""));
             let bet_amount = txtbet.get_text();
             if let Ok(amount) = bet_amount.trim().parse::<i32>() {
@@ -231,7 +236,7 @@ async fn main() {
                 rand_card.enabled = false;
                 stand.enabled = false;
                 reset.enabled = true;
-               // prebet = chips;
+                prebet = chips;
                 lblwin.set_text(&format!("You lose"));
             }
             lblplayer.set_text(&format!("Player value:\n {}", pvalue));
@@ -267,7 +272,7 @@ async fn main() {
                 lblchips.set_text(&format!("Chips:\n {}", chips));
                 lblwin.set_text(&format!("You Win"));
             } else if dwincheck(pvalue, dvalue) == true {
-                //prebet = chips;
+                prebet = chips;
                
                 
            
@@ -303,14 +308,71 @@ async fn main() {
             reset.enabled = false;
             lblplayer.set_text(&format!("Player value:\n {}", pvalue));
             lbldealer.set_text(&format!("Dealer value:\n {}", dvalue));
+            txtbet.set_text(&format!(""));
             lblwin.set_text(&format!(""));
-        }/*if chips == 0 && bet != prebet{
+        }if chips == 0 && bet != prebet{
             end_game.show(); 
             prebet = bet;
             lblwin.set_text(&format!("No More Chips"));
-        }*/
+        }
 
+        if let Some(result) = end_game.draw() {
+    // Only runs when a button was clicked or dialog was closed
+    match result {
+        MessageBoxResult::ButtonPressed(0) => {
+            // "Yes" button pressed
+                pcard1.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            pcard2.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            pcard3.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            pcard4.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            pcard5.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            dcard1.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            dcard2.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            dcard3.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            dcard4.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            dcard5.set_preload(tm.get_preload("assets/backcard.png").unwrap());
+            pvalue = 0;
+            dvalue = 0;
+            turn = 3;
+            dturn = 2;
+            bet = 0;
+            start.enabled = true;
+            rand_card.enabled = false;
+            stand.enabled = false;
+            reset.enabled = false;
+            lblplayer.set_text(&format!("Player value:\n {}", pvalue));
+            lbldealer.set_text(&format!("Dealer value:\n {}", dvalue));
+            lblwin.set_text(&format!(""));
+                chips = 500;
+                lblchips.set_text(&format!("Chips:\n {}", chips));
+                reset.enabled=false;
+                txtbet.set_text(&format!(""));
 
+            
+        },
+        MessageBoxResult::ButtonPressed(1) => {
+            // "No" button pressed
+            // Continue without saving...
+            exit(0);
+        },
+        MessageBoxResult::ButtonPressed(2) => {
+            // "Cancel" button pressed (for confirm_with_cancel dialogs)
+            // Handle cancel operation...
+            exit(0);
+        },
+        #[allow(unused)]
+        MessageBoxResult::ButtonPressed(_) => {
+            // IMPORTANT: This catch-all pattern is required by the Rust compiler
+            // even for simple confirm dialogs to ensure all possible values are covered
+            exit(0);
+        },
+        MessageBoxResult::Closed => {
+            // Dialog closed with X or Escape key
+            // Handle as cancel...
+            exit(0);
+        }
+    }
+}
         pcard5.draw();
         pcard4.draw();
         pcard3.draw();
@@ -333,6 +395,7 @@ async fn main() {
         next_frame().await;
     }
 }
+
 fn playervalue(mut pvalue: i32, show: &str) -> i32 {
     if show.contains("ace") {
         pvalue += 11;

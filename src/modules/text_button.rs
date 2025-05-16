@@ -62,7 +62,9 @@ Note: For buttons with transparent backgrounds (set normal_color with alpha=0),
 only the text area is clickable, not the entire button area.
 */
 use macroquad::prelude::*;
+#[cfg(feature = "scale")]
 use crate::modules::scale::mouse_position_world as mouse_position;
+
 // Custom struct for ButtonText
 pub struct TextButton {
     x: f32,              // Now private
@@ -87,6 +89,7 @@ pub struct TextButton {
     cached_text_width: f32,
     cached_text_position: Vec2,
     cached_rect: Rect,
+    pub visuable: bool,
 }
 
 impl TextButton {
@@ -125,6 +128,7 @@ impl TextButton {
             cached_text_width,
             cached_text_position,
             cached_rect,
+            visuable: true,
         }
     }
 
@@ -179,31 +183,31 @@ impl TextButton {
     }
     
     // Getter for x position
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub fn get_x(&self) -> f32 {
         self.x
     }
     
     // Getter for y position
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub fn get_y(&self) -> f32 {
         self.y
     }
     
     // Getter for position as Vec2
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub fn get_position(&self) -> Vec2 {
         Vec2::new(self.x, self.y)
     }
     
     // Getter for the button text
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub fn get_text(&self) -> &str {
         &self.text
     }
     
     // Setter for the button text - updates cached measurements
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub fn set_text<T: Into<String>>(&mut self, text: T) -> &mut Self {
         self.text = text.into();
         
@@ -223,7 +227,7 @@ impl TextButton {
     }
     
     // Update method to recalculate values when position or size changes
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub fn update_position(&mut self, x: f32, y: f32, width: Option<f32>, height: Option<f32>) -> &mut Self {
         self.x = x;
         self.y = y;
@@ -249,6 +253,9 @@ impl TextButton {
     }
 
     pub fn click(&self) -> bool {
+        if !self.visuable {
+            return false; // If not visible, don't process clicks
+        }
         // Get mouse position
         let (mouse_x, mouse_y) = mouse_position();
         let mouse_pos = Vec2::new(mouse_x, mouse_y);
