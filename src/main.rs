@@ -6,7 +6,7 @@ Program Details: <Program Description Here>
 
 mod modules;
 
-use std::process::exit;
+//use std::process::exit;
 
 use crate::modules::label::Label;
 use crate::modules::preload_image::LoadingScreenOptions;
@@ -121,7 +121,7 @@ async fn main() {
     let mut txtbet = TextInput::new(100.0, 500.0, 300.0, 40.0, 25.0);
 
     txtbet.with_colors(WHITE, RED, BLACK, WHITE);
-    txtbet.set_prompt("Enter Bet");
+    txtbet.set_prompt("Enter Bet Here");
     rand_card.with_round(15.0);
     rand_card.with_border(RED, 5.0);
     start.with_round(15.0);
